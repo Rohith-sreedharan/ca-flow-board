@@ -1,4 +1,5 @@
 
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import TaskBoard from '@/components/tasks/TaskBoard';
@@ -9,14 +10,18 @@ const ClientTasks = () => {
   const clientTasks = tasks.filter(task => task.status !== 'completed');
   
   return (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-r from-ca-green/10 to-transparent p-6 rounded-lg shadow-sm">
-        <h1 className="text-3xl font-bold text-ca-green-dark">My Tasks</h1>
-        <p className="text-muted-foreground mt-2">
-          Track your ongoing service requests
-        </p>
-      </div>
-      <TaskBoard tasks={clientTasks} basePath="/client" />
+    <div className="p-6 space-y-6">
+      <Card>
+        <CardHeader className="space-y-1 bg-gradient-to-r from-ca-green/10 to-transparent">
+          <CardTitle className="text-2xl text-ca-green-dark">My Tasks</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Track your ongoing service requests
+          </p>
+        </CardHeader>
+        <CardContent>
+          <TaskBoard tasks={clientTasks} basePath="/client" />
+        </CardContent>
+      </Card>
     </div>
   );
 };
