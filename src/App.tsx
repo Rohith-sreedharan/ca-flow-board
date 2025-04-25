@@ -9,11 +9,25 @@ import { store } from './store';
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import DashboardLayout from './components/layout/DashboardLayout';
-import EmployeeDashboard from './pages/employee/EmployeeDashboard';
-import EmployeeTasks from './pages/employee/EmployeeTasks';
+
+// Owner routes
 import OwnerDashboard from './pages/owner/OwnerDashboard';
 import OwnerTasks from './pages/owner/OwnerTasks';
+import OwnerClients from './pages/owner/OwnerClients';
+import OwnerEmployees from './pages/owner/OwnerEmployees';
+import OwnerInvoices from './pages/owner/OwnerInvoices';
+import OwnerCalendar from './pages/owner/OwnerCalendar';
+import OwnerAnalytics from './pages/owner/OwnerAnalytics';
+import OwnerSettings from './pages/owner/OwnerSettings';
+
+// Admin routes
 import AdminTasks from './pages/admin/AdminTasks';
+
+// Employee routes
+import EmployeeDashboard from './pages/employee/EmployeeDashboard';
+import EmployeeTasks from './pages/employee/EmployeeTasks';
+
+// Client routes
 import ClientTasks from './pages/client/ClientTasks';
 
 const queryClient = new QueryClient();
@@ -34,12 +48,12 @@ const App = () => (
             <Route path="/owner" element={<DashboardLayout />}>
               <Route path="dashboard" element={<OwnerDashboard />} />
               <Route path="tasks" element={<OwnerTasks />} />
-              <Route path="clients" element={<div>Clients Management</div>} />
-              <Route path="employees" element={<div>Employee Management</div>} />
-              <Route path="invoices" element={<div>Invoices Management</div>} />
-              <Route path="calendar" element={<div>Calendar</div>} />
-              <Route path="analytics" element={<div>Analytics</div>} />
-              <Route path="settings" element={<div>Settings</div>} />
+              <Route path="clients" element={<OwnerClients />} />
+              <Route path="employees" element={<OwnerEmployees />} />
+              <Route path="invoices" element={<OwnerInvoices />} />
+              <Route path="calendar" element={<OwnerCalendar />} />
+              <Route path="analytics" element={<OwnerAnalytics />} />
+              <Route path="settings" element={<OwnerSettings />} />
             </Route>
             
             {/* Super Admin routes */}
