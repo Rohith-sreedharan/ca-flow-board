@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FormDialog } from "@/components/shared/FormDialog";
 import { useState } from "react";
+import { AddEmployeeForm } from "@/components/forms/AddEmployeeForm";
 
 const AdminEmployees = () => {
   const [showAddEmployee, setShowAddEmployee] = useState(false);
@@ -36,10 +37,9 @@ const AdminEmployees = () => {
         onOpenChange={setShowAddEmployee}
         title="Add New Employee"
         description="Create a new employee account"
+        showFooter={false}
       >
-        <div className="text-center py-4 text-muted-foreground">
-          Employee form would go here
-        </div>
+        <AddEmployeeForm onSuccess={() => setShowAddEmployee(false)} />
       </FormDialog>
     </div>
   );
