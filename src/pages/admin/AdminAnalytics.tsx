@@ -1,9 +1,9 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UserRound } from "lucide-react";
 
 const AdminAnalytics = () => {
   const { tasks } = useSelector((state: RootState) => state.tasks);
@@ -15,13 +15,11 @@ const AdminAnalytics = () => {
     return acc;
   }, {} as Record<string, number>);
   
-  // Format for charts
   const taskStatusData = Object.entries(tasksByStatus).map(([status, count]) => ({
     name: status.charAt(0).toUpperCase() + status.slice(1),
     value: count
   }));
   
-  // Calculate task priority distribution
   const tasksByPriority = tasks.reduce((acc, task) => {
     acc[task.priority] = (acc[task.priority] || 0) + 1;
     return acc;
@@ -32,7 +30,6 @@ const AdminAnalytics = () => {
     value: count
   }));
   
-  // Invoice data for the past 6 months
   const currentDate = new Date();
   const monthsData = Array.from({ length: 6 }, (_, i) => {
     const d = new Date();
@@ -43,8 +40,36 @@ const AdminAnalytics = () => {
       invoices: Math.round(Math.random() * 20)
     };
   });
-  
-  // Colors for pie charts
+
+  const employeePerformance = [
+    {
+      name: 'John Doe',
+      tasksCompleted: 45,
+      avgCompletionTime: 2.5,
+      clientSatisfaction: 4.8,
+      revenue: 125000
+    },
+    {
+      name: 'Jane Smith',
+      tasksCompleted: 38,
+      avgCompletionTime: 2.8,
+      clientSatisfaction: 4.6,
+      revenue: 98000
+    },
+    {
+      name: 'Mike Johnson',
+      tasksCompleted: 52,
+      avgCompletionTime: 2.2,
+      clientSatisfaction: 4.9,
+      revenue: 145000
+    }
+  ];
+
+  const employeeTaskDistribution = employeePerformance.map(emp => ({
+    name: emp.name,
+    tasks: emp.tasksCompleted
+  }));
+
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
   return (
@@ -60,6 +85,7 @@ const AdminAnalytics = () => {
           <Tabs defaultValue="tasks" className="w-full">
             <TabsList className="mb-4">
               <TabsTrigger value="tasks">Tasks</TabsTrigger>
+              <TabsTrigger value="employees">Employees</TabsTrigger>
               <TabsTrigger value="financial">Financial</TabsTrigger>
               <TabsTrigger value="system">System</TabsTrigger>
             </TabsList>
@@ -107,6 +133,90 @@ const AdminAnalytics = () => {
                         <Tooltip />
                         <Legend />
                         <Bar dataKey="value" name="Tasks" fill="#8884d8" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="employees" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {employeePerformance.map((emp) => (
+                  <Card key={emp.name} className="bg-blue-50">
+                    <CardHeader>
+                      <div className="flex items-center space-x-2">
+                        <UserRound className="h-5 w-5 text-blue-600" />
+                        <CardTitle className="text-lg">{emp.name}</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span>Tasks Completed:</span>
+                          <span className="font-medium">{emp.tasksCompleted}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Avg. Completion Time:</span>
+                          <span className="font-medium">{emp.avgCompletionTime} days</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Client Satisfaction:</span>
+                          <span className="font-medium">{emp.clientSatisfaction}/5</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Revenue Generated:</span>
+                          <span className="font-medium">₹{emp.revenue.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Task Distribution by Employee</CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={employeeTaskDistribution}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={true}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="tasks"
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        >
+                          {employeeTaskDistribution.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Employee Performance Comparison</CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={employeePerformance}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="tasksCompleted" name="Tasks Completed" fill="#8884d8" />
+                        <Bar dataKey="clientSatisfaction" name="Client Satisfaction" fill="#82ca9d" />
                       </BarChart>
                     </ResponsiveContainer>
                   </CardContent>
