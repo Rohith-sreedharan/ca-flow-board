@@ -1,4 +1,3 @@
-
 import { Provider } from 'react-redux';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -21,7 +20,11 @@ import OwnerAnalytics from './pages/owner/OwnerAnalytics';
 import OwnerSettings from './pages/owner/OwnerSettings';
 
 // Admin routes
-import AdminTasks from './pages/admin/AdminTasks';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminEmployees from './pages/admin/AdminEmployees';
+import AdminTemplates from './pages/admin/AdminTemplates';
+import AdminInvoices from './pages/admin/AdminInvoices';
+import AdminAnalytics from './pages/admin/AdminAnalytics';
 
 // Employee routes
 import EmployeeDashboard from './pages/employee/EmployeeDashboard';
@@ -58,12 +61,12 @@ const App = () => (
             
             {/* Super Admin routes */}
             <Route path="/admin" element={<DashboardLayout />}>
-              <Route path="dashboard" element={<div>Admin Dashboard</div>} />
+              <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="tasks" element={<AdminTasks />} />
-              <Route path="templates" element={<div>Task Templates</div>} />
-              <Route path="employees" element={<div>Employee Management</div>} />
-              <Route path="invoices" element={<div>Invoices Management</div>} />
-              <Route path="analytics" element={<div>Analytics</div>} />
+              <Route path="templates" element={<AdminTemplates />} />
+              <Route path="employees" element={<AdminEmployees />} />
+              <Route path="invoices" element={<AdminInvoices />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
             </Route>
             
             {/* Employee routes */}
