@@ -45,19 +45,19 @@ const OwnerClients = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <Card>
-        <CardHeader className="space-y-1">
+    <div className="space-y-8">
+      <Card className="shadow-md">
+        <CardHeader className="bg-gradient-to-r from-ca-blue/10 to-transparent pb-6">
           <CardTitle className="text-2xl">Client Management</CardTitle>
-          <CardDescription>
+          <CardDescription className="mt-1">
             Manage your firm's clients and their information
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex justify-between items-center mb-6">
+        <CardContent className="py-6">
+          <div className="flex justify-between items-center mb-8">
             <div className="relative w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search clients" className="pl-8" />
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search clients" className="pl-10" />
             </div>
             <Button 
               className="bg-ca-blue hover:bg-ca-blue-dark"
@@ -68,41 +68,43 @@ const OwnerClients = () => {
             </Button>
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Client Name</TableHead>
-                <TableHead>Contact Person</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {clients.map((client) => (
-                <TableRow key={client.id}>
-                  <TableCell className="font-medium">{client.name}</TableCell>
-                  <TableCell>{client.contactPerson}</TableCell>
-                  <TableCell>{client.email}</TableCell>
-                  <TableCell>{client.phone}</TableCell>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      client.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {client.status.charAt(0).toUpperCase() + client.status.slice(1)}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">View</Button>
-                    <Button variant="ghost" size="sm">Edit</Button>
-                  </TableCell>
+          <div className="rounded-md border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Client Name</TableHead>
+                  <TableHead>Contact Person</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {clients.map((client) => (
+                  <TableRow key={client.id}>
+                    <TableCell className="font-medium">{client.name}</TableCell>
+                    <TableCell>{client.contactPerson}</TableCell>
+                    <TableCell>{client.email}</TableCell>
+                    <TableCell>{client.phone}</TableCell>
+                    <TableCell>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        client.status === 'active' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {client.status.charAt(0).toUpperCase() + client.status.slice(1)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm" className="mr-1">View</Button>
+                      <Button variant="ghost" size="sm">Edit</Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
           
           <FormDialog
             open={modals.addClient}

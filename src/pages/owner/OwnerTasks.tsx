@@ -23,8 +23,8 @@ const OwnerTasks = () => {
   };
   
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-8">
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Tasks</h1>
         <Button 
           className="bg-ca-blue hover:bg-ca-blue-dark"
@@ -35,14 +35,14 @@ const OwnerTasks = () => {
         </Button>
       </div>
       
-      <Card>
-        <CardHeader className="space-y-1">
+      <Card className="shadow-md">
+        <CardHeader className="bg-gradient-to-r from-ca-blue/10 to-transparent pb-6">
           <CardTitle className="text-2xl">Task Management</CardTitle>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mt-1">
             Manage all tasks across your organization
           </p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="py-6">
           <TaskBoard tasks={tasks} basePath="/owner" />
         </CardContent>
       </Card>

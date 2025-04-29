@@ -65,10 +65,10 @@ const OwnerCalendar = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Calendar</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Select value={view} onValueChange={setView}>
             <SelectTrigger className="w-32">
               <SelectValue placeholder="View" />
@@ -89,30 +89,30 @@ const OwnerCalendar = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="md:col-span-2">
-          <CardHeader>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <Card className="md:col-span-2 shadow-md">
+          <CardHeader className="bg-gradient-to-r from-ca-blue/10 to-transparent pb-6">
             <CardTitle>Calendar</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="py-6">
             <Calendar
               mode="single"
               selected={date}
               onSelect={setDate}
-              className="rounded-md border"
+              className="rounded-md border p-3"
             />
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
+        <Card className="shadow-md">
+          <CardHeader className="bg-gradient-to-r from-ca-green/10 to-transparent pb-6">
             <CardTitle>{date ? date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : 'Today'}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="py-6">
             {todayEvents.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {todayEvents.map(event => (
-                  <div key={event.id} className={`p-3 rounded ${getEventTypeStyles(event.type)}`}>
+                  <div key={event.id} className={`p-4 rounded-md ${getEventTypeStyles(event.type)}`}>
                     <p className="text-sm font-medium">{formatTime(event.date)} - {event.title}</p>
                   </div>
                 ))}

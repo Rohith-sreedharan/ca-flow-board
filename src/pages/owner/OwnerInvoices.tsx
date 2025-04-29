@@ -56,19 +56,19 @@ const OwnerInvoices = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <Card>
-        <CardHeader className="space-y-1">
+    <div className="space-y-8">
+      <Card className="shadow-md">
+        <CardHeader className="bg-gradient-to-r from-ca-blue/10 to-transparent pb-6">
           <CardTitle className="text-2xl">Invoices</CardTitle>
-          <CardDescription>
+          <CardDescription className="mt-1">
             Manage and track client invoices and payments
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex justify-between items-center mb-6">
+        <CardContent className="py-6">
+          <div className="flex justify-between items-center mb-8">
             <div className="relative w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search invoices" className="pl-8" />
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search invoices" className="pl-10" />
             </div>
             <Button 
               className="bg-ca-blue hover:bg-ca-blue-dark"
@@ -79,39 +79,41 @@ const OwnerInvoices = () => {
             </Button>
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Invoice #</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead>Issue Date</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {invoices.map((invoice) => (
-                <TableRow key={invoice.id}>
-                  <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
-                  <TableCell>{invoice.clientName}</TableCell>
-                  <TableCell>{format(new Date(invoice.issueDate), 'dd/MM/yyyy')}</TableCell>
-                  <TableCell>{format(new Date(invoice.dueDate), 'dd/MM/yyyy')}</TableCell>
-                  <TableCell>₹{invoice.total.toLocaleString()}</TableCell>
-                  <TableCell>
-                    {getStatusBadge(invoice.status)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">
-                      <FileText className="h-4 w-4 mr-1" />
-                      View
-                    </Button>
-                  </TableCell>
+          <div className="rounded-md border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Invoice #</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Issue Date</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {invoices.map((invoice) => (
+                  <TableRow key={invoice.id}>
+                    <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
+                    <TableCell>{invoice.clientName}</TableCell>
+                    <TableCell>{format(new Date(invoice.issueDate), 'dd/MM/yyyy')}</TableCell>
+                    <TableCell>{format(new Date(invoice.dueDate), 'dd/MM/yyyy')}</TableCell>
+                    <TableCell>₹{invoice.total.toLocaleString()}</TableCell>
+                    <TableCell>
+                      {getStatusBadge(invoice.status)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm">
+                        <FileText className="h-4 w-4 mr-1" />
+                        View
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
           
           <FormDialog
             open={modals.addInvoice}

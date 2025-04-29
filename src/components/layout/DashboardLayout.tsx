@@ -16,7 +16,7 @@ const DashboardLayout = () => {
         <AppSidebar />
         <main 
           className={cn(
-            "flex-1 transition-all duration-300 p-6 bg-gradient-to-br from-background to-muted/50",
+            "flex-1 transition-all duration-300 p-8 bg-gradient-to-br from-background to-muted/50",
             sidebarCollapsed ? "ml-[80px]" : "ml-64"
           )}
         >

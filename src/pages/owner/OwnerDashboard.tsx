@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { DashboardWidget } from "@/components/dashboard/DashboardWidget";
@@ -21,8 +22,8 @@ const OwnerDashboard = () => {
           <CardHeader className="bg-gradient-to-r from-ca-blue/10 to-transparent">
             <CardTitle>Task Overview</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
+          <CardContent className="pt-4">
+            <div className="space-y-3">
               <div>Total Tasks: {tasks.length}</div>
               <div>Active Tasks: {tasks.filter(t => t.status !== 'completed').length}</div>
               <div>Completed Tasks: {tasks.filter(t => t.status === 'completed').length}</div>
@@ -38,7 +39,7 @@ const OwnerDashboard = () => {
           <CardHeader className="bg-gradient-to-r from-ca-blue/10 to-transparent">
             <CardTitle>Recent Activity</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             <div className="text-sm text-muted-foreground">
               No recent activity
             </div>
@@ -53,8 +54,8 @@ const OwnerDashboard = () => {
           <CardHeader className="bg-gradient-to-r from-ca-green/10 to-transparent">
             <CardTitle>Performance Metrics</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
+          <CardContent className="pt-4">
+            <div className="space-y-3">
               <div>Average Completion Time: 3.2 days</div>
               <div>Tasks Completed This Week: 12</div>
               <div>On-time Delivery Rate: 94%</div>
@@ -70,8 +71,8 @@ const OwnerDashboard = () => {
           <CardHeader className="bg-gradient-to-r from-ca-blue/10 to-transparent">
             <CardTitle>System Status</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
+          <CardContent className="pt-4">
+            <div className="space-y-3">
               <div className="flex justify-between">
                 <span>Server Status:</span>
                 <span className="text-ca-green">Online</span>
@@ -219,20 +220,20 @@ const OwnerDashboard = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-ca-blue/10 to-transparent">
+    <div className="space-y-8">
+      <Card className="shadow-md">
+        <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-ca-blue/10 to-transparent pb-6">
           <div>
             <CardTitle className="text-2xl text-ca-blue-dark">Owner Dashboard</CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
+            <CardDescription className="text-sm text-muted-foreground mt-1">
               Overview of key business metrics and recent activities
             </CardDescription>
           </div>
           <AddWidgetButton onAddWidget={handleAddWidget} />
         </CardHeader>
-        <CardContent>
+        <CardContent className="py-6">
           <DndProvider backend={HTML5Backend}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-2">
               {widgets.map((widget, index) => (
                 <DashboardWidget
                   key={widget.id}
@@ -249,11 +250,11 @@ const OwnerDashboard = () => {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-ca-yellow/10 to-transparent">
+      <Card className="shadow-md">
+        <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-ca-yellow/10 to-transparent pb-6">
           <div>
             <CardTitle className="text-2xl text-ca-yellow-dark">Pinned Clients</CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
+            <CardDescription className="text-sm text-muted-foreground mt-1">
               Quick access to key client information
             </CardDescription>
           </div>
@@ -262,9 +263,9 @@ const OwnerDashboard = () => {
             Add Client
           </Button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="py-6">
           <DndProvider backend={HTML5Backend}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-2">
               {pinnedClients.map((client, index) => (
                 <DashboardWidget 
                   key={client.id} 
@@ -274,10 +275,10 @@ const OwnerDashboard = () => {
                   onRemove={handleRemoveWidget}
                 >
                   <Card className="h-full">
-                    <CardHeader>
+                    <CardHeader className="pb-3">
                       <CardTitle className="text-lg">{client.name}</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="pt-3">
                       <div className="space-y-2">
                         <div>Industry: {client.industry}</div>
                         <div>Contact: {client.contact}</div>
