@@ -1,4 +1,7 @@
+
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { mockTaskTemplates } from '@/data/mockTaskTemplates';
+import { mockTasks } from '@/data/mockTasks';
 
 export type TaskStatus = 'todo' | 'inprogress' | 'review' | 'completed';
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
@@ -75,218 +78,15 @@ interface TaskState {
 }
 
 const initialState: TaskState = {
-  tasks: [],
-  taskTemplates: [],
+  tasks: mockTasks,
+  taskTemplates: mockTaskTemplates,
   isLoading: false,
   error: null,
 };
 
-// Enhanced mock templates for the new categories
-const mockTemplates: TaskTemplate[] = [
-  {
-    id: 'template_gst_monthly',
-    title: 'GST Filing - Monthly',
-    description: 'Monthly GST filing process including data collection and returns',
-    category: 'gst_filing',
-    isRecurring: true,
-    recurrencePattern: 'monthly',
-    subtasks: [
-      {
-        id: 'gst_1',
-        title: 'Collection of data from clients',
-        description: 'Gather all necessary documents and data from client',
-        dueDate: '5th of every month',
-        isCompleted: false,
-        order: 1,
-      },
-      {
-        id: 'gst_2',
-        title: 'GSTR1 Filing',
-        description: 'File GSTR1 return by 10th of every month',
-        dueDate: '10th of every month',
-        isCompleted: false,
-        order: 2,
-      },
-      {
-        id: 'gst_3',
-        title: 'GST 3B Filing & Tax Payment',
-        description: 'File GST 3B and make tax payment by 20th of every month',
-        dueDate: '20th of every month',
-        isCompleted: false,
-        order: 3,
-      },
-    ],
-    price: 5000,
-    isPayableTask: true,
-    payableTaskType: 'payable_task_1',
-    createdBy: '201',
-    createdAt: '2024-01-01T10:00:00Z',
-  },
-  {
-    id: 'template_itr_annual',
-    title: 'ITR Filing - Annual',
-    description: 'Annual ITR filing process with custom deadlines',
-    category: 'itr_filing',
-    isRecurring: true,
-    recurrencePattern: 'yearly',
-    subtasks: [
-      {
-        id: 'itr_1',
-        title: 'Collection of data from clients',
-        description: 'Gather annual financial data and documents',
-        isCompleted: false,
-        order: 1,
-      },
-      {
-        id: 'itr_2',
-        title: 'Finalization of accounts',
-        description: 'Review and finalize all account statements',
-        isCompleted: false,
-        order: 2,
-      },
-      {
-        id: 'itr_3',
-        title: 'Tax payment',
-        description: 'Calculate and process tax payments',
-        isCompleted: false,
-        order: 3,
-      },
-      {
-        id: 'itr_4',
-        title: 'ITR filing',
-        description: 'Submit ITR forms before deadline',
-        isCompleted: false,
-        order: 4,
-      },
-    ],
-    price: 15000,
-    isPayableTask: true,
-    payableTaskType: 'payable_task_1',
-    createdBy: '201',
-    createdAt: '2024-01-01T11:00:00Z',
-  },
-  {
-    id: 'template_roc_annual',
-    title: 'ROC Filing - Annual',
-    description: 'Annual ROC filing including all required forms',
-    category: 'roc_filing',
-    isRecurring: true,
-    recurrencePattern: 'yearly',
-    subtasks: [
-      {
-        id: 'roc_1',
-        title: 'Form 1 Filing',
-        description: 'Prepare and submit Form 1',
-        isCompleted: false,
-        order: 1,
-      },
-      {
-        id: 'roc_2',
-        title: 'Form 2 Filing',
-        description: 'Prepare and submit Form 2',
-        isCompleted: false,
-        order: 2,
-      },
-      {
-        id: 'roc_3',
-        title: 'Form 3 Filing',
-        description: 'Prepare and submit Form 3',
-        isCompleted: false,
-        order: 3,
-      },
-    ],
-    price: 8000,
-    isPayableTask: true,
-    payableTaskType: 'payable_task_2',
-    createdBy: '201',
-    createdAt: '2024-01-01T12:00:00Z',
-  },
-];
-
-// Enhanced mock tasks
-const mockTasks: Task[] = [
-  {
-    id: '1',
-    title: 'Monthly GST Filing - ABC Corp',
-    description: 'Complete GST filing process for ABC Corp - March 2024',
-    status: 'todo',
-    priority: 'high',
-    category: 'gst_filing',
-    clientId: '101',
-    clientName: 'ABC Corp',
-    assignedTo: ['301'],
-    createdBy: '201',
-    createdAt: '2024-04-15T12:00:00Z',
-    dueDate: '2024-04-25T12:00:00Z',
-    isTemplate: false,
-    templateId: 'template_gst_monthly',
-    isRecurring: true,
-    recurrencePattern: 'monthly',
-    price: 5000,
-    isPayableTask: true,
-    payableTaskType: 'payable_task_1',
-    quotationSent: false,
-    paymentStatus: 'pending',
-    quotationNumber: 'QUO-2024-001',
-    subtasks: [
-      {
-        id: 'gst_1_abc',
-        title: 'Collection of data from ABC Corp',
-        description: 'Gather all necessary documents and data from ABC Corp',
-        dueDate: '2024-04-05T12:00:00Z',
-        isCompleted: true,
-        order: 1,
-      },
-      {
-        id: 'gst_2_abc',
-        title: 'GSTR1 Filing for ABC Corp',
-        description: 'File GSTR1 return for ABC Corp',
-        dueDate: '2024-04-10T12:00:00Z',
-        isCompleted: false,
-        order: 2,
-      },
-      {
-        id: 'gst_3_abc',
-        title: 'GST 3B Filing & Tax Payment for ABC Corp',
-        description: 'File GST 3B and make tax payment for ABC Corp',
-        dueDate: '2024-04-20T12:00:00Z',
-        isCompleted: false,
-        order: 3,
-      },
-    ],
-  },
-  {
-    id: '2',
-    title: 'Annual ITR Filing - XYZ Industries',
-    description: 'Complete ITR filing for XYZ Industries - FY 2023-24',
-    status: 'inprogress',
-    priority: 'high',
-    category: 'itr_filing',
-    clientId: '102',
-    clientName: 'XYZ Industries',
-    assignedTo: ['302', '303'],
-    createdBy: '201',
-    createdAt: '2024-04-10T10:30:00Z',
-    dueDate: '2024-07-31T17:00:00Z',
-    isTemplate: false,
-    templateId: 'template_itr_annual',
-    isRecurring: false,
-    price: 15000,
-    isPayableTask: true,
-    payableTaskType: 'payable_task_1',
-    quotationSent: true,
-    paymentStatus: 'pending',
-    quotationNumber: 'QUO-2024-002',
-  },
-];
-
 const tasksSlice = createSlice({
   name: 'tasks',
-  initialState: {
-    ...initialState,
-    tasks: mockTasks,
-    taskTemplates: mockTemplates,
-  },
+  initialState,
   reducers: {
     setTasks: (state, action: PayloadAction<Task[]>) => {
       state.tasks = action.payload;
