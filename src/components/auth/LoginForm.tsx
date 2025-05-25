@@ -2,23 +2,32 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { useAuth } from '@/hooks/useAuth';
+import { useDispatch } from 'react-redux';
+import { setCredentials } from '@/store/slices/authSlice';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { UserRole } from '@/store/slices/authSlice';
 
 type LoginFormData = {
   email: string;
   password: string;
 };
 
+const mockUsers = [
+  { id: '101', email: 'owner@caflow.com', password: 'password', name: 'John Owner', role: 'owner' },
+  { id: '102', email: 'admin@caflow.com', password: 'password', name: 'Sarah Admin', role: 'superadmin' },
+  { id: '103', email: 'employee@caflow.com', password: 'password', name: 'Mike Employee', role: 'employee' },
+  { id: '104', email: 'client@caflow.com', password: 'password', name: 'Acme Corporation', role: 'client' },
+];
+
 const LoginForm = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const dispatch = useDispatch();
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>();
 
   const onSubmit = async (data: LoginFormData) => {
@@ -26,12 +35,41 @@ const LoginForm = () => {
     setError(null);
     
     try {
-      const result = await login(data.email, data.password);
+      // Simulate API call with 1 second delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      if (result.success) {
-        // Navigation will be handled by the auth state change in Login.tsx
+      // Find user in mock data
+      const user = mockUsers.find(u => u.email === data.email);
+      
+      if (user && user.password === data.password) {
+        // Mock successful login
+        dispatch(setCredentials({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role as UserRole,
+          token: 'mock-jwt-token-' + Math.random().toString(36).substring(2, 15),
+        }));
+        
+        // Redirect based on role
+        switch (user.role) {
+          case 'owner':
+            navigate('/owner/dashboard');
+            break;
+          case 'superadmin':
+            navigate('/admin/dashboard');
+            break;
+          case 'employee':
+            navigate('/employee/dashboard');
+            break;
+          case 'client':
+            navigate('/client/dashboard');
+            break;
+          default:
+            navigate('/');
+        }
       } else {
-        setError(result.error || 'Login failed');
+        setError('Invalid email or password');
       }
     } catch (err) {
       setError('Login failed. Please try again.');
@@ -98,7 +136,7 @@ const LoginForm = () => {
       </CardContent>
       <CardFooter className="flex justify-center">
         <p className="text-sm text-muted-foreground">
-          Production Login: rohith@springreen.in / admin123
+          Demo Credentials - Check out these roles:
         </p>
       </CardFooter>
       <CardFooter className="p-0">
@@ -120,7 +158,7 @@ const LoginForm = () => {
             <p>client@caflow.com</p>
           </div>
           <div className="col-span-2 text-center mt-1 text-gray-500">
-            <p>Password: "password" for demo accounts</p>
+            <p>Password: "password" for all accounts</p>
           </div>
         </div>
       </CardFooter>

@@ -11,6 +11,7 @@ import { toggleModal } from '@/store/slices/uiSlice';
 
 const OwnerTasks = () => {
   const dispatch = useDispatch();
+  const { tasks } = useSelector((state: RootState) => state.tasks);
   const { modals } = useSelector((state: RootState) => state.ui);
   
   const handleOpenAddTaskModal = () => {
@@ -42,7 +43,7 @@ const OwnerTasks = () => {
           </p>
         </CardHeader>
         <CardContent className="py-6">
-          <TaskBoard basePath="/owner" />
+          <TaskBoard tasks={tasks} basePath="/owner" />
         </CardContent>
       </Card>
       
