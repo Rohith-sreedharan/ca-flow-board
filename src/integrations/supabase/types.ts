@@ -9,7 +9,303 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      clients: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          is_deleted: boolean | null
+          name: string
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          name: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          name?: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      employees: {
+        Row: {
+          created_at: string | null
+          department: string | null
+          employee_id: string
+          hire_date: string | null
+          id: string
+          is_deleted: boolean | null
+          position: string | null
+          salary: number | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          department?: string | null
+          employee_id: string
+          hire_date?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          position?: string | null
+          salary?: number | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          department?: string | null
+          employee_id?: string
+          hire_date?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          position?: string | null
+          salary?: number | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          amount: number
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          due_date: string | null
+          id: string
+          invoice_number: string
+          is_deleted: boolean | null
+          issued_date: string | null
+          paid_date: string | null
+          status: string | null
+          task_id: string | null
+          tax_amount: number | null
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          is_deleted?: boolean | null
+          issued_date?: string | null
+          paid_date?: string | null
+          status?: string | null
+          task_id?: string | null
+          tax_amount?: number | null
+          total_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          is_deleted?: boolean | null
+          issued_date?: string | null
+          paid_date?: string | null
+          status?: string | null
+          task_id?: string | null
+          tax_amount?: number | null
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          is_deleted: boolean | null
+          role: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id: string
+          is_deleted?: boolean | null
+          role?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          role?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          assigned_to: string[] | null
+          attachments: string[] | null
+          category: string
+          client_id: string | null
+          client_name: string | null
+          comments: Json | null
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          is_deleted: boolean | null
+          is_payable_task: boolean | null
+          is_recurring: boolean | null
+          is_template: boolean | null
+          payable_task_type: string | null
+          payment_status: string | null
+          price: number | null
+          priority: string
+          quotation_number: string | null
+          quotation_sent: boolean | null
+          recurrence_pattern: string | null
+          status: string
+          subtasks: Json | null
+          template_id: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string[] | null
+          attachments?: string[] | null
+          category: string
+          client_id?: string | null
+          client_name?: string | null
+          comments?: Json | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          is_payable_task?: boolean | null
+          is_recurring?: boolean | null
+          is_template?: boolean | null
+          payable_task_type?: string | null
+          payment_status?: string | null
+          price?: number | null
+          priority?: string
+          quotation_number?: string | null
+          quotation_sent?: boolean | null
+          recurrence_pattern?: string | null
+          status?: string
+          subtasks?: Json | null
+          template_id?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string[] | null
+          attachments?: string[] | null
+          category?: string
+          client_id?: string | null
+          client_name?: string | null
+          comments?: Json | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          is_payable_task?: boolean | null
+          is_recurring?: boolean | null
+          is_template?: boolean | null
+          payable_task_type?: string | null
+          payment_status?: string | null
+          price?: number | null
+          priority?: string
+          quotation_number?: string | null
+          quotation_sent?: boolean | null
+          recurrence_pattern?: string | null
+          status?: string
+          subtasks?: Json | null
+          template_id?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

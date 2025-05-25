@@ -28,7 +28,7 @@ export const useEmployees = () => {
     queryKey: ['employees'],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('employees')
           .select(`
             *,
@@ -57,7 +57,7 @@ export const useEmployees = () => {
   const addEmployee = useMutation({
     mutationFn: async (employeeData: Partial<Employee>) => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('employees')
           .insert([employeeData])
           .select()

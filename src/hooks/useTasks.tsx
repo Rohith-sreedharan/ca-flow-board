@@ -39,7 +39,7 @@ export const useTasks = () => {
     queryKey: ['tasks'],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('tasks')
           .select('*')
           .eq('is_deleted', false)
@@ -61,7 +61,7 @@ export const useTasks = () => {
   const updateTaskStatus = useMutation({
     mutationFn: async ({ taskId, status }: { taskId: string; status: string }) => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('tasks')
           .update({ 
             status,

@@ -4,9 +4,19 @@ import { Button } from "@/components/ui/button";
 import { FormDialog } from "@/components/shared/FormDialog";
 import { useState } from "react";
 import { AddEmployeeForm } from "@/components/forms/AddEmployeeForm";
+import { useEmployees } from "@/hooks/useEmployees";
 
 const AdminEmployees = () => {
   const [showAddEmployee, setShowAddEmployee] = useState(false);
+  const { employees, isLoading } = useEmployees();
+
+  if (isLoading) {
+    return (
+      <div className="p-6 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-ca-blue"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -27,7 +37,7 @@ const AdminEmployees = () => {
         </CardHeader>
         <CardContent>
           <div className="text-sm text-muted-foreground">
-            No employees found
+            {employees.length === 0 ? 'No employees found' : `${employees.length} employees found`}
           </div>
         </CardContent>
       </Card>

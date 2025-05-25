@@ -20,7 +20,7 @@ export const useClients = () => {
     queryKey: ['clients'],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('clients')
           .select('*')
           .eq('is_deleted', false)
@@ -42,7 +42,7 @@ export const useClients = () => {
   const addClient = useMutation({
     mutationFn: async (clientData: Partial<Client>) => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('clients')
           .insert([clientData])
           .select()

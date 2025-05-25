@@ -55,9 +55,9 @@ const OwnerEmployees = () => {
     );
   }
 
-  // Filter employees and admins
-  const employeeList = employees.filter(emp => emp.profiles?.role === 'employee');
-  const adminList = employees.filter(emp => emp.profiles?.role === 'superadmin');
+  // Filter employees and admins - using type assertion to handle the TypeScript issue
+  const employeeList = (employees as any[]).filter((emp: any) => emp.profiles?.role === 'employee');
+  const adminList = (employees as any[]).filter((emp: any) => emp.profiles?.role === 'superadmin');
 
   return (
     <div className="p-6 space-y-6">
@@ -106,13 +106,13 @@ const OwnerEmployees = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {employeeList.map((employee) => (
+                  {employeeList.map((employee: any) => (
                     <TableRow key={employee.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
                             <AvatarFallback className="bg-ca-blue text-white">
-                              {employee.profiles?.full_name?.split(' ').map(n => n[0]).join('') || 'E'}
+                              {employee.profiles?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'E'}
                             </AvatarFallback>
                           </Avatar>
                           <span className="font-medium">{employee.profiles?.full_name || 'Unknown'}</span>
@@ -160,13 +160,13 @@ const OwnerEmployees = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {adminList.map((admin) => (
+                  {adminList.map((admin: any) => (
                     <TableRow key={admin.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
                             <AvatarFallback className="bg-ca-blue-dark text-white">
-                              {admin.profiles?.full_name?.split(' ').map(n => n[0]).join('') || 'A'}
+                              {admin.profiles?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'A'}
                             </AvatarFallback>
                           </Avatar>
                           <span className="font-medium">{admin.profiles?.full_name || 'Unknown'}</span>

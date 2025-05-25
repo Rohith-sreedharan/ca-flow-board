@@ -29,7 +29,7 @@ export function useAuth() {
           // Fetch user profile with error handling
           setTimeout(async () => {
             try {
-              const { data: profileData, error } = await supabase
+              const { data: profileData, error } = await (supabase as any)
                 .from('profiles')
                 .select('*')
                 .eq('id', session.user.id)
