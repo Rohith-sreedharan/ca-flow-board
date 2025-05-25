@@ -35,9 +35,30 @@ export function useAuth() {
                 .eq('id', session.user.id)
                 .single();
               
-              if (error) {
+              if (error && error.code === 'PGRST116') {
+                // Profile doesn't exist, create one
+                const newProfile = {
+                  id: session.user.id,
+                  email: session.user.email!,
+                  full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || null,
+                  role: session.user.email === 'rohith@springreen.in' ? 'owner' : 'employee',
+                };
+                
+                const { data: insertedProfile, error: insertError } = await (supabase as any)
+                  .from('profiles')
+                  .insert([newProfile])
+                  .select()
+                  .single();
+                
+                if (insertError) {
+                  console.error('Error creating profile:', insertError);
+                  setProfile(newProfile as UserProfile);
+                } else {
+                  setProfile(insertedProfile);
+                }
+              } else if (error) {
                 console.error('Error fetching profile:', error);
-                // Create a default profile if none exists
+                // Create a fallback profile
                 setProfile({
                   id: session.user.id,
                   email: session.user.email!,
@@ -50,6 +71,14 @@ export function useAuth() {
               }
             } catch (err) {
               console.error('Profile fetch error:', err);
+              // Create a fallback profile
+              setProfile({
+                id: session.user.id,
+                email: session.user.email!,
+                full_name: session.user.user_metadata?.full_name || null,
+                role: session.user.email === 'rohith@springreen.in' ? 'owner' : 'employee',
+                created_at: new Date().toISOString(),
+              });
             }
           }, 0);
         } else {
@@ -70,11 +99,16 @@ export function useAuth() {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { data, error };
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      return { data, error };
+    } catch (err) {
+      console.error('Sign in error:', err);
+      return { data: null, error: err };
+    }
   };
 
   const signUp = async (email: string, password: string, fullName?: string) => {

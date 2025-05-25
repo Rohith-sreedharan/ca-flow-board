@@ -5,19 +5,21 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Shield, CheckCircle } from 'lucide-react';
+import { Loader2, Shield, CheckCircle, Info } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signIn, isAuthenticated, role, loading } = useAuth();
+  const { signIn, signUp, isAuthenticated, role, loading } = useAuth();
   
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('rohith@springreen.in');
+  const [password, setPassword] = useState('springreen.in');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [isCreatingOwner, setIsCreatingOwner] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated && role) {
@@ -41,6 +43,29 @@ const Login = () => {
     }
   };
 
+  const createOwnerAccount = async () => {
+    setIsCreatingOwner(true);
+    setError('');
+    
+    try {
+      const { data, error } = await signUp('rohith@springreen.in', 'springreen.in', 'Rohith (Owner)');
+      
+      if (error) {
+        if (error.message.includes('already registered')) {
+          setError('Owner account already exists. Please try signing in.');
+        } else {
+          setError(`Failed to create owner account: ${error.message}`);
+        }
+      } else {
+        setError('Owner account created successfully! Please sign in.');
+      }
+    } catch (err) {
+      setError('Failed to create owner account. Please try again.');
+    } finally {
+      setIsCreatingOwner(false);
+    }
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -49,7 +74,11 @@ const Login = () => {
     const { error } = await signIn(email, password);
     
     if (error) {
-      setError(error.message);
+      if (error.message.includes('Invalid login credentials')) {
+        setError('Invalid email or password. If this is your first time, try creating the owner account below.');
+      } else {
+        setError(error.message);
+      }
     }
     
     setIsSubmitting(false);
@@ -181,11 +210,37 @@ const Login = () => {
               </CardContent>
             </Card>
 
+            {/* Create Owner Account */}
+            <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
+              <h3 className="text-sm font-semibold text-blue-700 mb-3 flex items-center">
+                <Info className="h-4 w-4 mr-2" />
+                First Time Setup
+              </h3>
+              <p className="text-sm text-blue-600 mb-4">
+                If this is your first time accessing the system, create the owner account:
+              </p>
+              <Button 
+                onClick={createOwnerAccount}
+                disabled={isCreatingOwner}
+                variant="outline"
+                className="w-full border-blue-300 text-blue-700 hover:bg-blue-100"
+              >
+                {isCreatingOwner ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating Owner Account...
+                  </>
+                ) : (
+                  'Create Owner Account'
+                )}
+              </Button>
+            </div>
+
             {/* Demo Credentials */}
             <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
               <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
                 <Shield className="h-4 w-4 mr-2 text-ca-blue" />
-                Demo Access
+                Production Access
               </h3>
               <div className="space-y-3">
                 <div className="bg-white rounded-md p-3 border border-gray-200">
