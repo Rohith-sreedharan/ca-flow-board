@@ -60,6 +60,7 @@ const App = () => (
               }>
                 <Route path="dashboard" element={<OwnerDashboard />} />
                 <Route path="tasks" element={<OwnerTasks />} />
+                <Route path="templates" element={<OwnerTemplates />} />
                 <Route path="clients" element={<OwnerClients />} />
                 <Route path="employees" element={<OwnerEmployees />} />
                 <Route path="invoices" element={<OwnerInvoices />} />
