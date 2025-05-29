@@ -1,7 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Task, TaskStatus, TaskPriority, TaskCategory } from '@/store/slices/tasksSlice';
+import { Task, TaskStatus, TaskPriority, TaskCategory, SubTask } from '@/store/slices/tasksSlice';
 
 interface CreateTaskData {
   title: string;
@@ -56,7 +56,7 @@ export const useTasks = () => {
           category: task.category as TaskCategory,
           clientId: task.client_id || '',
           clientName: task.clients?.name || task.client_name || '',
-          assignedTo: task.assigned_to || [],
+          assignedTo: Array.isArray(task.assigned_to) ? task.assigned_to : [],
           createdBy: task.created_by || '',
           createdAt: task.created_at || '',
           dueDate: task.due_date || '',
@@ -66,9 +66,9 @@ export const useTasks = () => {
           parentTaskId: undefined, // This field doesn't exist in DB yet
           isRecurring: task.is_recurring || false,
           recurrencePattern: task.recurrence_pattern,
-          attachments: task.attachments || [],
-          subtasks: task.subtasks || [],
-          comments: task.comments || [],
+          attachments: Array.isArray(task.attachments) ? task.attachments : [],
+          subtasks: Array.isArray(task.subtasks) ? task.subtasks as SubTask[] : [],
+          comments: Array.isArray(task.comments) ? task.comments : [],
           price: task.price,
           isPayableTask: task.is_payable_task || false,
           payableTaskType: task.payable_task_type as 'payable_task_1' | 'payable_task_2' | undefined,

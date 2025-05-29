@@ -29,9 +29,9 @@ const OwnerTasks = () => {
         status: task.status,
         priority: task.priority,
         category: task.category,
-        client_name: task.client_name,
-        due_date: task.due_date,
-        created_at: task.created_at,
+        client_name: task.clientName,
+        due_date: task.dueDate,
+        created_at: task.createdAt,
       }));
 
       const csvContent = [
