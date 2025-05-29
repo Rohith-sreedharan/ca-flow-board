@@ -18,10 +18,24 @@ interface CreateTaskData {
   price?: number;
   payable_task_type?: string;
   is_deleted?: boolean;
+  template_id?: string;
+  is_recurring?: boolean;
+  recurrence_pattern?: string;
+  subtasks?: any[];
 }
 
 export const useTasks = () => {
   const queryClient = useQueryClient();
+
+  // Category mapping functions
+  const mapDatabaseCategoryToType = (dbCategory: string): TaskCategory => {
+    switch (dbCategory) {
+      case 'gst': return 'gst_filing';
+      case 'itr': return 'itr_filing';
+      case 'roc': return 'roc_filing';
+      default: return 'other';
+    }
+  };
 
   const { data: tasks = [], isLoading, error } = useQuery({
     queryKey: ['tasks'],
@@ -54,7 +68,7 @@ export const useTasks = () => {
           description: task.description || '',
           status: task.status as TaskStatus,
           priority: task.priority as TaskPriority,
-          category: task.category as TaskCategory,
+          category: mapDatabaseCategoryToType(task.category),
           clientId: task.client_id || '',
           clientName: task.clients?.name || task.client_name || '',
           assignedTo: Array.isArray(task.assigned_to) ? task.assigned_to : [],

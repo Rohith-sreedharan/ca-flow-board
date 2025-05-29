@@ -1,4 +1,3 @@
-
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export type TaskStatus = 'todo' | 'inprogress' | 'review' | 'completed';
@@ -146,8 +145,8 @@ const mockTemplates: TaskTemplate[] = [
       },
       {
         id: 'itr_3',
-        title: 'Tax payment',
-        description: 'Calculate and process tax payments',
+        title: 'Tax calculation and planning',
+        description: 'Calculate tax liability and identify savings',
         isCompleted: false,
         order: 3,
       },
@@ -175,22 +174,22 @@ const mockTemplates: TaskTemplate[] = [
     subtasks: [
       {
         id: 'roc_1',
-        title: 'Form 1 Filing',
-        description: 'Prepare and submit Form 1',
+        title: 'Form AOC-4 Filing',
+        description: 'Prepare and submit Annual Return with financial statements',
         isCompleted: false,
         order: 1,
       },
       {
         id: 'roc_2',
-        title: 'Form 2 Filing',
-        description: 'Prepare and submit Form 2',
+        title: 'Form MGT-7 Filing',
+        description: 'Prepare and submit Annual Return of the company',
         isCompleted: false,
         order: 2,
       },
       {
         id: 'roc_3',
-        title: 'Form 3 Filing',
-        description: 'Prepare and submit Form 3',
+        title: 'Form ADT-1 Filing',
+        description: 'File auditor appointment/resignation form if applicable',
         isCompleted: false,
         order: 3,
       },
@@ -203,7 +202,7 @@ const mockTemplates: TaskTemplate[] = [
   },
 ];
 
-// Enhanced mock tasks
+// Enhanced mock tasks with proper category mappings
 const mockTasks: Task[] = [
   {
     id: '1',
