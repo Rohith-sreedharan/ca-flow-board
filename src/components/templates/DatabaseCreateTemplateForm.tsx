@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -31,10 +30,11 @@ const templateSchema = z.object({
 type TemplateFormData = z.infer<typeof templateSchema>;
 
 interface DatabaseCreateTemplateFormProps {
-  onClose: () => void;
+  onSuccess: () => void;
+  templateId?: string;
 }
 
-export const DatabaseCreateTemplateForm = ({ onClose }: DatabaseCreateTemplateFormProps) => {
+export const DatabaseCreateTemplateForm = ({ onSuccess, templateId }: DatabaseCreateTemplateFormProps) => {
   const [subtasks, setSubtasks] = useState<Array<{ title: string; description: string; order: number }>>([]);
   const [currentSubtask, setCurrentSubtask] = useState({ title: '', description: '' });
   
@@ -88,7 +88,7 @@ export const DatabaseCreateTemplateForm = ({ onClose }: DatabaseCreateTemplateFo
 
     console.log('Creating template with data:', templateData);
     createTemplate(templateData);
-    onClose();
+    onSuccess();
   };
 
   return (
@@ -335,7 +335,7 @@ export const DatabaseCreateTemplateForm = ({ onClose }: DatabaseCreateTemplateFo
         </div>
 
         <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onSuccess}>
             Cancel
           </Button>
           <Button type="submit" disabled={isCreating}>
