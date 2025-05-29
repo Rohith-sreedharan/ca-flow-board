@@ -75,7 +75,8 @@ export const useRecurringTasks = () => {
       console.log('Generating recurring tasks...');
       
       try {
-        const { data, error } = await supabase.rpc('generate_recurring_tasks' as any);
+        // Try to call the RPC function if it exists
+        const { data, error } = await (supabase as any).rpc('generate_recurring_tasks');
 
         if (error) {
           console.error('Error generating recurring tasks:', error);

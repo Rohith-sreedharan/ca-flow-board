@@ -43,28 +43,19 @@ export const useTemplates = () => {
     queryFn: async () => {
       console.log('Fetching templates from database...');
       
-      // Use rpc call as fallback for new tables
-      const { data, error } = await supabase.rpc('get_task_templates') as any;
-      
+      // Direct query to task_templates table with type assertion
+      const { data, error } = await (supabase as any)
+        .from('task_templates')
+        .select('*')
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false });
+
       if (error) {
-        // If RPC doesn't exist, try direct query with type assertion
-        console.log('RPC not found, trying direct query...');
-        const directQuery = await (supabase as any)
-          .from('task_templates')
-          .select('*')
-          .eq('is_deleted', false)
-          .order('created_at', { ascending: false });
-
-        if (directQuery.error) {
-          console.error('Error fetching templates:', directQuery.error);
-          throw directQuery.error;
-        }
-
-        console.log('Fetched templates:', directQuery.data);
-        return directQuery.data as TaskTemplate[];
+        console.error('Error fetching templates:', error);
+        throw error;
       }
 
-      console.log('Fetched templates via RPC:', data);
+      console.log('Fetched templates:', data);
       return data as TaskTemplate[];
     },
   });
