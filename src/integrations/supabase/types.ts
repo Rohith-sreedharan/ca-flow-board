@@ -398,6 +398,139 @@ export type Database = {
           },
         ]
       }
+      payment_configurations: {
+        Row: {
+          business_email: string | null
+          business_name: string | null
+          business_phone: string | null
+          config_name: string
+          created_at: string
+          gateway_type: string
+          id: string
+          is_active: boolean | null
+          is_deleted: boolean | null
+          logo_url: string | null
+          updated_at: string
+          webhook_secret: string | null
+        }
+        Insert: {
+          business_email?: string | null
+          business_name?: string | null
+          business_phone?: string | null
+          config_name: string
+          created_at?: string
+          gateway_type: string
+          id?: string
+          is_active?: boolean | null
+          is_deleted?: boolean | null
+          logo_url?: string | null
+          updated_at?: string
+          webhook_secret?: string | null
+        }
+        Update: {
+          business_email?: string | null
+          business_name?: string | null
+          business_phone?: string | null
+          config_name?: string
+          created_at?: string
+          gateway_type?: string
+          id?: string
+          is_active?: boolean | null
+          is_deleted?: boolean | null
+          logo_url?: string | null
+          updated_at?: string
+          webhook_secret?: string | null
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          client_id: string | null
+          created_at: string
+          currency: string | null
+          gateway_response: Json | null
+          id: string
+          is_deleted: boolean | null
+          paid_at: string | null
+          payment_gateway: string | null
+          payment_id: string
+          payment_method: string | null
+          quotation_id: string | null
+          receipt_sent: boolean | null
+          receipt_sent_at: string | null
+          receipt_url: string | null
+          status: string | null
+          task_id: string | null
+          transaction_fee: number | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          client_id?: string | null
+          created_at?: string
+          currency?: string | null
+          gateway_response?: Json | null
+          id?: string
+          is_deleted?: boolean | null
+          paid_at?: string | null
+          payment_gateway?: string | null
+          payment_id: string
+          payment_method?: string | null
+          quotation_id?: string | null
+          receipt_sent?: boolean | null
+          receipt_sent_at?: string | null
+          receipt_url?: string | null
+          status?: string | null
+          task_id?: string | null
+          transaction_fee?: number | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string | null
+          created_at?: string
+          currency?: string | null
+          gateway_response?: Json | null
+          id?: string
+          is_deleted?: boolean | null
+          paid_at?: string | null
+          payment_gateway?: string | null
+          payment_id?: string
+          payment_method?: string | null
+          quotation_id?: string | null
+          receipt_sent?: boolean | null
+          receipt_sent_at?: string | null
+          receipt_url?: string | null
+          status?: string | null
+          task_id?: string | null
+          transaction_fee?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_quotation_id_fkey"
+            columns: ["quotation_id"]
+            isOneToOne: false
+            referencedRelation: "quotations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -427,6 +560,100 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      quotations: {
+        Row: {
+          amount: number
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_deleted: boolean | null
+          notes: string | null
+          payment_link_id: string | null
+          payment_link_url: string | null
+          payment_terms: string | null
+          payment_type: string | null
+          quotation_number: string
+          sent_via_whatsapp: boolean | null
+          status: string | null
+          task_id: string | null
+          tax_amount: number
+          tax_rate: number | null
+          total_amount: number
+          updated_at: string
+          valid_until: string | null
+          whatsapp_sent_at: string | null
+        }
+        Insert: {
+          amount: number
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          notes?: string | null
+          payment_link_id?: string | null
+          payment_link_url?: string | null
+          payment_terms?: string | null
+          payment_type?: string | null
+          quotation_number: string
+          sent_via_whatsapp?: boolean | null
+          status?: string | null
+          task_id?: string | null
+          tax_amount: number
+          tax_rate?: number | null
+          total_amount: number
+          updated_at?: string
+          valid_until?: string | null
+          whatsapp_sent_at?: string | null
+        }
+        Update: {
+          amount?: number
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          notes?: string | null
+          payment_link_id?: string | null
+          payment_link_url?: string | null
+          payment_terms?: string | null
+          payment_type?: string | null
+          quotation_number?: string
+          sent_via_whatsapp?: boolean | null
+          status?: string | null
+          task_id?: string | null
+          tax_amount?: number
+          tax_rate?: number | null
+          total_amount?: number
+          updated_at?: string
+          valid_until?: string | null
+          whatsapp_sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotations_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tasks: {
         Row: {
@@ -542,6 +769,10 @@ export type Database = {
     }
     Functions: {
       generate_client_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_quotation_number: {
         Args: Record<PropertyKey, never>
         Returns: string
       }

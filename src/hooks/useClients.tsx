@@ -94,7 +94,7 @@ export const useClients = () => {
   });
 
   const addClient = useMutation({
-    mutationFn: async (clientData: Partial<Client>) => {
+    mutationFn: async (clientData: Omit<Client, 'id' | 'created_at' | 'updated_at'>) => {
       try {
         const { data, error } = await supabase
           .from('clients')
@@ -219,7 +219,7 @@ export const useClientCommunications = (clientId?: string) => {
   });
 
   const addCommunication = useMutation({
-    mutationFn: async (communicationData: Partial<ClientCommunication>) => {
+    mutationFn: async (communicationData: Omit<ClientCommunication, 'id' | 'created_at'>) => {
       try {
         const { data, error } = await supabase
           .from('client_communications')
@@ -276,7 +276,7 @@ export const useClientDocuments = (clientId?: string) => {
   });
 
   const addDocument = useMutation({
-    mutationFn: async (documentData: Partial<ClientDocument>) => {
+    mutationFn: async (documentData: Omit<ClientDocument, 'id' | 'created_at'>) => {
       try {
         const { data, error } = await supabase
           .from('client_documents')
@@ -333,7 +333,7 @@ export const useClientContacts = (clientId?: string) => {
   });
 
   const addContact = useMutation({
-    mutationFn: async (contactData: Partial<ClientContact>) => {
+    mutationFn: async (contactData: Omit<ClientContact, 'id'>) => {
       try {
         const { data, error } = await supabase
           .from('client_contacts')

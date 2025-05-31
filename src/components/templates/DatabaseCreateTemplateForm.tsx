@@ -1,403 +1,228 @@
-import { useState } from 'react';
+
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Plus, Trash2, X } from 'lucide-react';
+import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Switch } from '@/components/ui/switch';
+import { ClientSelector } from '@/components/clients/ClientSelector';
 import { useTemplates } from '@/hooks/useTemplates';
-import { useEmployees } from '@/hooks/useEmployees';
-import { getCategoryOptions } from './CategoryWorkflows';
-import { ClientSelector } from '@/components/ClientSelector';
+import { toast } from 'sonner';
 
 const templateSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
-  category: z.enum(['gst', 'itr', 'roc', 'other']),
-  is_recurring: z.boolean(),
-  recurrence_pattern: z.enum(['monthly', 'yearly', 'custom']).optional(),
-  deadline: z.string().optional(),
+  category: z.string().min(1, 'Category is required'),
+  priority: z.enum(['low', 'medium', 'high']),
+  dueDate: z.string().optional(),
+  isRecurring: z.boolean().default(false),
+  recurrencePattern: z.string().optional(),
+  isPayableTask: z.boolean().default(false),
+  payableTaskType: z.enum(['payable_task_1', 'payable_task_2']).optional(),
   price: z.number().optional(),
-  is_payable_task: z.boolean(),
-  payable_task_type: z.enum(['payable_task_1', 'payable_task_2']).optional(),
-  assigned_employee_id: z.string().optional(),
 });
 
 type TemplateFormData = z.infer<typeof templateSchema>;
 
-interface DatabaseCreateTemplateFormProps {
-  onSuccess: () => void;
-  templateId?: string;
+interface Props {
+  onSuccess?: () => void;
 }
 
-export const DatabaseCreateTemplateForm = ({ onSuccess, templateId }: DatabaseCreateTemplateFormProps) => {
-  const [subtasks, setSubtasks] = useState<Array<{ title: string; description: string; order: number }>>([]);
-  const [currentSubtask, setCurrentSubtask] = useState({ title: '', description: '' });
-  const [selectedClient, setSelectedClient] = useState(null);
-  
-  const { createTemplate, isCreating } = useTemplates();
-  const { employees } = useEmployees();
-  const categoryOptions = getCategoryOptions();
+export const DatabaseCreateTemplateForm: React.FC<Props> = ({ onSuccess }) => {
+  const [selectedClient, setSelectedClient] = useState<any>(null);
+  const { addTemplate, isAdding } = useTemplates();
 
-  const form = useForm<TemplateFormData>({
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<TemplateFormData>({
     resolver: zodResolver(templateSchema),
     defaultValues: {
-      title: '',
-      description: '',
-      category: 'other',
-      is_recurring: false,
-      price: 0,
-      is_payable_task: false,
+      category: 'gst',
+      priority: 'medium',
+      isRecurring: false,
+      isPayableTask: false,
     },
   });
 
-  const isRecurring = form.watch('is_recurring');
-  const isPayable = form.watch('is_payable_task');
+  const isRecurring = watch('isRecurring');
+  const isPayableTask = watch('isPayableTask');
 
-  const addSubtask = () => {
-    if (currentSubtask.title.trim()) {
-      setSubtasks(prev => [...prev, {
-        ...currentSubtask,
-        order: prev.length + 1,
-      }]);
-      setCurrentSubtask({ title: '', description: '' });
+  const onSubmit = async (data: TemplateFormData) => {
+    try {
+      const templateData = {
+        ...data,
+        client_id: selectedClient?.id,
+        client_name: selectedClient?.name,
+        is_template: true,
+        status: 'todo' as const,
+        price: data.isPayableTask ? data.price : null,
+        payable_task_type: data.isPayableTask ? data.payableTaskType : null,
+        recurrence_pattern: data.isRecurring ? data.recurrencePattern : null,
+        due_date: data.dueDate ? new Date(data.dueDate).toISOString() : null,
+      };
+
+      addTemplate(templateData);
+      onSuccess?.();
+    } catch (error) {
+      toast.error('Failed to create template');
     }
-  };
-
-  const removeSubtask = (index: number) => {
-    setSubtasks(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleClientSelect = (client) => {
-    setSelectedClient(client);
-    // Pre-fill client data in the template
-    if (client) {
-      form.setValue('title', `${form.getValues('title')} - ${client.name}`);
-    }
-  };
-
-  const onSubmit = (data: TemplateFormData) => {
-    const templateData = {
-      title: data.title,
-      description: data.description,
-      category: data.category,
-      is_recurring: data.is_recurring,
-      recurrence_pattern: data.recurrence_pattern,
-      deadline: data.deadline,
-      subtasks,
-      price: data.price || 0,
-      is_payable_task: data.is_payable_task,
-      payable_task_type: data.payable_task_type,
-      assigned_employee_id: data.assigned_employee_id,
-      // Include client information if selected
-      client_id: selectedClient?.id,
-      client_name: selectedClient?.name,
-      client_data: selectedClient ? {
-        client_code: selectedClient.client_code,
-        contact_person: selectedClient.contact_person,
-        email: selectedClient.email,
-        phone: selectedClient.phone,
-        gst_number: selectedClient.gst_number,
-        pan_number: selectedClient.pan_number,
-        business_type: selectedClient.business_type,
-      } : null,
-    };
-
-    console.log('Creating template with data:', templateData);
-    createTemplate(templateData);
-    onSuccess();
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* Client Selection Section */}
-        <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
-          <h3 className="text-lg font-medium">Client Pre-filling (Optional)</h3>
-          <p className="text-sm text-gray-600">
-            Select a client to pre-fill their information in tasks created from this template
-          </p>
-          <ClientSelector
-            onClientSelect={handleClientSelect}
-            selectedClientId={selectedClient?.id}
-            placeholder="Search and select a client for this template..."
-          />
-          {selectedClient && (
-            <div className="mt-2 p-3 bg-white border rounded">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-medium">{selectedClient.name}</h4>
-                  <p className="text-sm text-gray-500">
-                    {selectedClient.contact_person} • {selectedClient.client_code}
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedClient(null)}
-                >
-                  Remove
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Template Title</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter template title" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Enter template description" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="category"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Category</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {categoryOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="assigned_employee_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Assigned Employee (Optional)</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select employee" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="unassigned">No specific employee</SelectItem>
-                  {employees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id}>
-                      {employee.employee_id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="is_recurring"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-              <FormControl>
-                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>Recurring Template</FormLabel>
-              </div>
-            </FormItem>
-          )}
-        />
-
-        {isRecurring && (
-          <FormField
-            control={form.control}
-            name="recurrence_pattern"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Recurrence Pattern</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select pattern" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="yearly">Yearly</SelectItem>
-                    <SelectItem value="custom">Custom</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
-
-        <FormField
-          control={form.control}
-          name="deadline"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Custom Deadline (Optional)</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., 15th of every month" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="is_payable_task"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-              <FormControl>
-                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>Payable Task</FormLabel>
-              </div>
-            </FormItem>
-          )}
-        />
-
-        {isPayable && (
-          <>
-            <FormField
-              control={form.control}
-              name="price"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Price</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      placeholder="Enter price" 
-                      {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="payable_task_type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Payment Configuration</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select payment type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="payable_task_1">Payment Config 1</SelectItem>
-                      <SelectItem value="payable_task_2">Payment Config 2</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </>
-        )}
-
-        {/* Subtasks Section */}
-        <div className="space-y-4">
-          <Label>Subtasks</Label>
-          
-          {/* Add new subtask */}
-          <div className="border rounded-lg p-4 space-y-3">
+    <Card>
+      <CardHeader>
+        <CardTitle>Create Task Template</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="title">Template Title *</Label>
             <Input
-              placeholder="Subtask title"
-              value={currentSubtask.title}
-              onChange={(e) => setCurrentSubtask(prev => ({ ...prev, title: e.target.value }))}
+              id="title"
+              {...register('title')}
+              placeholder="e.g., Monthly GST Filing"
             />
-            <Textarea
-              placeholder="Subtask description"
-              value={currentSubtask.description}
-              onChange={(e) => setCurrentSubtask(prev => ({ ...prev, description: e.target.value }))}
-            />
-            <Button type="button" onClick={addSubtask} variant="outline" size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Subtask
-            </Button>
+            {errors.title && (
+              <p className="text-sm text-red-600">{errors.title.message}</p>
+            )}
           </div>
 
-          {/* Display existing subtasks */}
-          {subtasks.length > 0 && (
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              {...register('description')}
+              placeholder="Describe the task template..."
+              rows={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="category">Category *</Label>
+            <Select onValueChange={(value) => setValue('category', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="gst">GST Filing</SelectItem>
+                <SelectItem value="itr">ITR Filing</SelectItem>
+                <SelectItem value="roc">ROC Filing</SelectItem>
+                <SelectItem value="other">Other Tasks</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.category && (
+              <p className="text-sm text-red-600">{errors.category.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="priority">Priority</Label>
+            <Select onValueChange={(value) => setValue('priority', value as any)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Client (Optional)</Label>
+            <ClientSelector
+              onClientSelect={setSelectedClient}
+              selectedClientId={selectedClient?.id}
+              placeholder="Select a client for this template"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="dueDate">Due Date (Optional)</Label>
+            <Input
+              id="dueDate"
+              type="datetime-local"
+              {...register('dueDate')}
+            />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Switch
+              checked={isRecurring}
+              onCheckedChange={(checked) => setValue('isRecurring', checked)}
+            />
+            <Label>Recurring Task</Label>
+          </div>
+
+          {isRecurring && (
             <div className="space-y-2">
-              {subtasks.map((subtask, index) => (
-                <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex-1">
-                    <h4 className="font-medium">{subtask.title}</h4>
-                    {subtask.description && (
-                      <p className="text-sm text-muted-foreground">{subtask.description}</p>
-                    )}
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeSubtask(index)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+              <Label htmlFor="recurrencePattern">Recurrence Pattern</Label>
+              <Select onValueChange={(value) => setValue('recurrencePattern', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select recurrence" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="quarterly">Quarterly</SelectItem>
+                  <SelectItem value="yearly">Yearly</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           )}
-        </div>
 
-        <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={onSuccess}>
-            Cancel
+          <div className="flex items-center space-x-2">
+            <Switch
+              checked={isPayableTask}
+              onCheckedChange={(checked) => setValue('isPayableTask', checked)}
+            />
+            <Label>Payable Task</Label>
+          </div>
+
+          {isPayableTask && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="payableTaskType">Payment Configuration</Label>
+                <Select onValueChange={(value) => setValue('payableTaskType', value as any)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select payment type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="payable_task_1">Payment Config 1</SelectItem>
+                    <SelectItem value="payable_task_2">Payment Config 2</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="price">Price (₹)</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  {...register('price', { valueAsNumber: true })}
+                  placeholder="Enter task price"
+                />
+              </div>
+            </div>
+          )}
+
+          <Button type="submit" disabled={isAdding} className="w-full">
+            {isAdding ? 'Creating...' : 'Create Template'}
           </Button>
-          <Button type="submit" disabled={isCreating}>
-            {isCreating ? 'Creating...' : 'Create Template'}
-          </Button>
-        </div>
-      </form>
-    </Form>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
