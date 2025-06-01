@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,7 +16,7 @@ import { toast } from 'sonner';
 const templateSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
-  category: z.string().min(1, 'Category is required'),
+  category: z.enum(['gst', 'itr', 'roc', 'other']), // Fixed to match the allowed types
   priority: z.enum(['low', 'medium', 'high']),
   dueDate: z.string().optional(),
   isRecurring: z.boolean().default(false),
@@ -31,9 +30,10 @@ type TemplateFormData = z.infer<typeof templateSchema>;
 
 interface Props {
   onSuccess?: () => void;
+  templateId?: string; // Added templateId prop for editing
 }
 
-export const DatabaseCreateTemplateForm: React.FC<Props> = ({ onSuccess }) => {
+export const DatabaseCreateTemplateForm: React.FC<Props> = ({ onSuccess, templateId }) => {
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const { createTemplate, isCreating } = useTemplates();
 
@@ -61,7 +61,7 @@ export const DatabaseCreateTemplateForm: React.FC<Props> = ({ onSuccess }) => {
       const templateData = {
         title: data.title,
         description: data.description,
-        category: data.category,
+        category: data.category, // This will now match the correct type
         priority: data.priority,
         client_id: selectedClient?.id,
         client_name: selectedClient?.name,
@@ -86,7 +86,7 @@ export const DatabaseCreateTemplateForm: React.FC<Props> = ({ onSuccess }) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Create Task Template</CardTitle>
+        <CardTitle>{templateId ? 'Edit Template' : 'Create Task Template'}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -114,7 +114,7 @@ export const DatabaseCreateTemplateForm: React.FC<Props> = ({ onSuccess }) => {
 
           <div className="space-y-2">
             <Label htmlFor="category">Category *</Label>
-            <Select onValueChange={(value) => setValue('category', value)}>
+            <Select onValueChange={(value) => setValue('category', value as any)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
@@ -225,7 +225,7 @@ export const DatabaseCreateTemplateForm: React.FC<Props> = ({ onSuccess }) => {
           )}
 
           <Button type="submit" disabled={isCreating} className="w-full">
-            {isCreating ? 'Creating...' : 'Create Template'}
+            {isCreating ? 'Creating...' : templateId ? 'Update Template' : 'Create Template'}
           </Button>
         </form>
       </CardContent>

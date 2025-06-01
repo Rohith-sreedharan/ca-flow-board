@@ -94,12 +94,27 @@ export const useQuotations = () => {
     mutationFn: async (quotationData: Omit<Quotation, 'id' | 'created_at' | 'updated_at' | 'quotation_number'>) => {
       const { data: userData } = await supabase.auth.getUser();
       
+      // Fixed: Only include properties that exist in the database table
+      const dbData = {
+        task_id: quotationData.task_id,
+        client_id: quotationData.client_id,
+        amount: quotationData.amount,
+        tax_rate: quotationData.tax_rate,
+        tax_amount: quotationData.tax_amount,
+        total_amount: quotationData.total_amount,
+        status: quotationData.status,
+        valid_until: quotationData.valid_until,
+        payment_terms: quotationData.payment_terms,
+        notes: quotationData.notes,
+        payment_type: quotationData.payment_type,
+        sent_via_whatsapp: quotationData.sent_via_whatsapp,
+        is_deleted: quotationData.is_deleted,
+        created_by: userData.user?.id,
+      };
+
       const { data, error } = await supabase
         .from('quotations')
-        .insert({
-          ...quotationData,
-          created_by: userData.user?.id,
-        })
+        .insert(dbData)
         .select()
         .single();
 

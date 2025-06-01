@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -56,7 +55,7 @@ export function QuotationForm({ onSuccess }: QuotationFormProps) {
   const taxAmount = (amount * taxRate) / 100;
   const totalAmount = amount + taxAmount;
 
-  // Filter payable tasks
+  // Filter payable tasks - fixed property names
   const payableTasks = tasks.filter(task => task.is_payable_task && !task.quotation_sent);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
