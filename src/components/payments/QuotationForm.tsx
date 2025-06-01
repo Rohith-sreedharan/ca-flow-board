@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -55,21 +54,36 @@ export const QuotationForm: React.FC<Props> = ({ onSuccess, initialTaskId }) => 
   });
 
   const selectedTaskId = watch('task_id');
+  const selectedClientId = watch('client_id');
   const amount = watch('amount') || 0;
   const taxRate = watch('tax_rate') || 18;
   const taxAmount = (amount * taxRate) / 100;
   const totalAmount = amount + taxAmount;
 
-  // Filter payable tasks - fixed property names
+  // Filter payable tasks
   const payableTasks = tasks.filter(task => task.isPayableTask && !task.quotationSent);
 
   const onSubmit = async (values: QuotationFormData) => {
     try {
+      // Ensure required fields are present
+      if (!values.client_id || !values.task_id) {
+        toast.error('Please select both task and client');
+        return;
+      }
+
       const quotationData = {
-        ...values,
+        task_id: values.task_id,
+        client_id: values.client_id,
+        amount: values.amount,
+        tax_rate: values.tax_rate,
         tax_amount: taxAmount,
         total_amount: totalAmount,
         status: 'draft' as const,
+        valid_until: values.valid_until,
+        payment_terms: values.payment_terms,
+        notes: values.notes,
+        payment_type: values.payment_type,
+        sent_via_whatsapp: values.sent_via_whatsapp,
         is_deleted: false,
       };
 
@@ -122,7 +136,7 @@ export const QuotationForm: React.FC<Props> = ({ onSuccess, initialTaskId }) => 
 
           <div className="space-y-2">
             <Label htmlFor="client_id">Client *</Label>
-            <Select onValueChange={(value) => setValue('client_id', value)} value={watch('client_id')}>
+            <Select onValueChange={(value) => setValue('client_id', value)} value={selectedClientId}>
               <SelectTrigger>
                 <SelectValue placeholder="Select client" />
               </SelectTrigger>

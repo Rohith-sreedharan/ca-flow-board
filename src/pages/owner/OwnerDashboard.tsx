@@ -3,46 +3,63 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { DashboardWidget } from "@/components/dashboard/DashboardWidget";
 import { AddWidgetButton } from "@/components/dashboard/AddWidgetButton";
+import { RealTimeTaskMonitor } from "@/components/dashboard/RealTimeTaskMonitor";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, BarChart, Users } from "lucide-react";
 
 const OwnerDashboard = () => {
   const { tasks } = useSelector((state: RootState) => state.tasks);
   
-  // Define initial widgets
+  // Define initial widgets with enhanced dashboard content
   const initialWidgets = [
     {
       id: "task-overview",
       content: (
         <Card className="h-full">
           <CardHeader className="bg-gradient-to-r from-ca-blue/10 to-transparent">
-            <CardTitle>Task Overview</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart className="h-5 w-5" />
+              Task Overview
+            </CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
             <div className="space-y-3">
-              <div>Total Tasks: {tasks.length}</div>
-              <div>Active Tasks: {tasks.filter(t => t.status !== 'completed').length}</div>
-              <div>Completed Tasks: {tasks.filter(t => t.status === 'completed').length}</div>
+              <div className="flex justify-between">
+                <span>Total Tasks:</span>
+                <span className="font-bold">{tasks.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Active Tasks:</span>
+                <span className="font-bold text-blue-600">{tasks.filter(t => t.status !== 'completed').length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Completed Tasks:</span>
+                <span className="font-bold text-green-600">{tasks.filter(t => t.status === 'completed').length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Overdue Tasks:</span>
+                <span className="font-bold text-red-600">
+                  {tasks.filter(t => new Date(t.dueDate) < new Date() && t.status !== 'completed').length}
+                </span>
+              </div>
             </div>
           </CardContent>
         </Card>
       ),
     },
     {
-      id: "recent-activity",
+      id: "real-time-monitor",
       content: (
         <Card className="h-full">
-          <CardHeader className="bg-gradient-to-r from-ca-blue/10 to-transparent">
-            <CardTitle>Recent Activity</CardTitle>
+          <CardHeader className="bg-gradient-to-r from-ca-green/10 to-transparent">
+            <CardTitle>Real-Time Monitoring</CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
-            <div className="text-sm text-muted-foreground">
-              No recent activity
-            </div>
+            <RealTimeTaskMonitor />
           </CardContent>
         </Card>
       ),
@@ -56,34 +73,51 @@ const OwnerDashboard = () => {
           </CardHeader>
           <CardContent className="pt-4">
             <div className="space-y-3">
-              <div>Average Completion Time: 3.2 days</div>
-              <div>Tasks Completed This Week: 12</div>
-              <div>On-time Delivery Rate: 94%</div>
+              <div className="flex justify-between">
+                <span>Average Completion Time:</span>
+                <span className="font-bold">3.2 days</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Tasks Completed This Week:</span>
+                <span className="font-bold text-green-600">12</span>
+              </div>
+              <div className="flex justify-between">
+                <span>On-time Delivery Rate:</span>
+                <span className="font-bold text-blue-600">94%</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Employee Efficiency:</span>
+                <span className="font-bold text-purple-600">87%</span>
+              </div>
             </div>
           </CardContent>
         </Card>
       ),
     },
     {
-      id: "system-status",
+      id: "revenue-summary",
       content: (
         <Card className="h-full">
-          <CardHeader className="bg-gradient-to-r from-ca-blue/10 to-transparent">
-            <CardTitle>System Status</CardTitle>
+          <CardHeader className="bg-gradient-to-r from-ca-yellow/10 to-transparent">
+            <CardTitle>Revenue Summary</CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
             <div className="space-y-3">
               <div className="flex justify-between">
-                <span>Server Status:</span>
-                <span className="text-ca-green">Online</span>
+                <span>Monthly Revenue:</span>
+                <span className="font-bold text-green-600">₹65,000</span>
               </div>
               <div className="flex justify-between">
-                <span>Database Health:</span>
-                <span className="text-ca-green">Good</span>
+                <span>Pending Payments:</span>
+                <span className="font-bold text-orange-600">₹12,000</span>
               </div>
               <div className="flex justify-between">
-                <span>Last Backup:</span>
-                <span>2 hours ago</span>
+                <span>Growth Rate:</span>
+                <span className="font-bold text-blue-600">+12%</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Active Quotations:</span>
+                <span className="font-bold">8</span>
               </div>
             </div>
           </CardContent>
@@ -98,12 +132,24 @@ const OwnerDashboard = () => {
       name: "ABC Corp",
       industry: "Technology",
       contact: "John Doe",
+      activeProjects: 3,
+      totalValue: 45000,
     },
     {
       id: "client-xyz",
       name: "XYZ Industries",
       industry: "Manufacturing",
       contact: "Jane Smith",
+      activeProjects: 2,
+      totalValue: 32000,
+    },
+    {
+      id: "client-def",
+      name: "DEF Enterprises",
+      industry: "Retail",
+      contact: "Mike Johnson",
+      activeProjects: 1,
+      totalValue: 18000,
     },
   ];
   
@@ -140,9 +186,9 @@ const OwnerDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <div>Total Revenue: $125,000</div>
+                  <div>Total Revenue: ₹125,000</div>
                   <div>Monthly Growth: +12%</div>
-                  <div>Projected Q4: $180,000</div>
+                  <div>Projected Q4: ₹180,000</div>
                 </div>
               </CardContent>
             </Card>
@@ -215,7 +261,6 @@ const OwnerDashboard = () => {
         return;
     }
     
-    // Add the new widget to state
     setWidgets([...widgets, newWidget]);
   };
 
@@ -224,9 +269,12 @@ const OwnerDashboard = () => {
       <Card className="shadow-md">
         <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-ca-blue/10 to-transparent pb-6">
           <div>
-            <CardTitle className="text-2xl text-ca-blue-dark">Owner Dashboard</CardTitle>
+            <CardTitle className="text-2xl text-ca-blue-dark flex items-center gap-2">
+              <BarChart className="h-6 w-6" />
+              Owner Dashboard
+            </CardTitle>
             <CardDescription className="text-sm text-muted-foreground mt-1">
-              Overview of key business metrics and recent activities
+              Real-time overview of business metrics and analytics
             </CardDescription>
           </div>
           <AddWidgetButton onAddWidget={handleAddWidget} />
@@ -253,9 +301,12 @@ const OwnerDashboard = () => {
       <Card className="shadow-md">
         <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-ca-yellow/10 to-transparent pb-6">
           <div>
-            <CardTitle className="text-2xl text-ca-yellow-dark">Pinned Clients</CardTitle>
+            <CardTitle className="text-2xl text-ca-yellow-dark flex items-center gap-2">
+              <Users className="h-6 w-6" />
+              Key Clients
+            </CardTitle>
             <CardDescription className="text-sm text-muted-foreground mt-1">
-              Quick access to key client information
+              Quick access to your most important client relationships
             </CardDescription>
           </div>
           <Button className="bg-ca-yellow hover:bg-ca-yellow-dark">
@@ -264,31 +315,32 @@ const OwnerDashboard = () => {
           </Button>
         </CardHeader>
         <CardContent className="py-6">
-          <DndProvider backend={HTML5Backend}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-2">
-              {pinnedClients.map((client, index) => (
-                <DashboardWidget 
-                  key={client.id} 
-                  id={client.id} 
-                  index={index}
-                  moveWidget={moveWidget}
-                  onRemove={handleRemoveWidget}
-                >
-                  <Card className="h-full">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg">{client.name}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-3">
-                      <div className="space-y-2">
-                        <div>Industry: {client.industry}</div>
-                        <div>Contact: {client.contact}</div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </DashboardWidget>
-              ))}
-            </div>
-          </DndProvider>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-2">
+            {pinnedClients.map((client) => (
+              <Card key={client.id} className="h-full">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">{client.name}</CardTitle>
+                  <p className="text-sm text-gray-600">{client.industry}</p>
+                </CardHeader>
+                <CardContent className="pt-3">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>Contact:</span>
+                      <span className="font-medium">{client.contact}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Active Projects:</span>
+                      <span className="font-bold text-blue-600">{client.activeProjects}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Total Value:</span>
+                      <span className="font-bold text-green-600">₹{client.totalValue.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </CardContent>
       </Card>
     </div>
