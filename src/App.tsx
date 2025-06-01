@@ -36,7 +36,9 @@ import EmployeeDashboard from './pages/employee/EmployeeDashboard';
 import EmployeeTasks from './pages/employee/EmployeeTasks';
 
 // Client routes
+import ClientDashboard from './pages/client/ClientDashboard';
 import ClientTasks from './pages/client/ClientTasks';
+import ClientDocuments from './pages/client/ClientDocuments';
 
 const queryClient = new QueryClient();
 
@@ -103,8 +105,9 @@ const App = () => (
                   <DashboardLayout />
                 </ProtectedRoute>
               }>
-                <Route path="dashboard" element={<div>Client Dashboard</div>} />
+                <Route path="dashboard" element={<ClientDashboard />} />
                 <Route path="tasks" element={<ClientTasks />} />
+                <Route path="documents" element={<ClientDocuments />} />
                 <Route path="invoices" element={<div>My Invoices</div>} />
                 <Route path="chat" element={<div>Messages</div>} />
               </Route>
