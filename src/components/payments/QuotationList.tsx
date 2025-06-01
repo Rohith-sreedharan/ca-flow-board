@@ -16,7 +16,7 @@ import { useQuotations } from '@/hooks/usePayments';
 import { Send, Download, Eye, MessageCircle } from 'lucide-react';
 
 export const QuotationList = () => {
-  const { quotations, isLoading, sendWhatsAppQuotation } = useQuotations();
+  const { quotations, isLoading, sendViaWhatsApp } = useQuotations();
 
   const getStatusBadge = (status: string) => {
     const statusColors = {
@@ -37,7 +37,7 @@ export const QuotationList = () => {
   const handleWhatsAppSend = (quotation: any) => {
     const clientPhone = quotation.clients?.phone;
     if (clientPhone) {
-      sendWhatsAppQuotation({ quotationId: quotation.id, phoneNumber: clientPhone });
+      sendViaWhatsApp({ quotationId: quotation.id, phoneNumber: clientPhone });
     }
   };
 

@@ -3,291 +3,350 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useClientCommunications } from '@/hooks/useClients';
-import { toast } from 'sonner';
-import { Phone, Mail, MapPin, Building2, CreditCard, FileText, MessageSquare, Send } from 'lucide-react';
-
-interface Client {
-  id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  contact_person?: string;
-  client_code?: string;
-  status?: string;
-  gst_number?: string;
-  pan_number?: string;
-  business_type?: string;
-  industry?: string;
-  billing_address?: string;
-  shipping_address?: string;
-  credit_limit?: number;
-  payment_terms?: number;
-  website?: string;
-  notes?: string;
-  created_at?: string;
-}
+import { useClients } from '@/hooks/useClients';
+import { Edit, Save, X, Plus, Phone, Mail, MessageSquare, Calendar, FileText } from 'lucide-react';
 
 interface ClientDetailViewProps {
-  client: Client;
+  client: any;
   onClose: () => void;
 }
 
 export const ClientDetailView: React.FC<ClientDetailViewProps> = ({ client, onClose }) => {
-  const [communicationData, setCommunicationData] = useState({
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedClient, setEditedClient] = useState(client);
+  const [newCommunication, setNewCommunication] = useState({
+    type: 'email' as 'email' | 'phone' | 'whatsapp' | 'meeting' | 'document',
     subject: '',
     message: '',
-    communication_type: 'email'
+    recipient_email: client.email || '',
+    recipient_phone: client.phone || '',
   });
-  const { addCommunication, isAdding } = useClientCommunications();
 
-  const handleSendCommunication = async () => {
-    if (!communicationData.subject || !communicationData.message) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
+  const { updateClient, isUpdating } = useClients();
 
-    try {
-      await addCommunication({
-        client_id: client.id,
-        communication_type: communicationData.communication_type,
-        subject: communicationData.subject,
-        message: communicationData.message,
-        recipient_email: client.email || '',
-        recipient_phone: client.phone || '',
-        status: 'sent'
-      });
+  const handleSave = () => {
+    updateClient({ id: client.id, ...editedClient });
+    setIsEditing(false);
+  };
 
-      setCommunicationData({
-        subject: '',
-        message: '',
-        communication_type: 'email'
-      });
+  const handleCancel = () => {
+    setEditedClient(client);
+    setIsEditing(false);
+  };
 
-      toast.success('Communication logged successfully');
-    } catch (error) {
-      toast.error('Failed to log communication');
-    }
+  const handleAddCommunication = () => {
+    // Implementation for adding communication
+    console.log('Adding communication:', newCommunication);
+    setNewCommunication({
+      type: 'email',
+      subject: '',
+      message: '',
+      recipient_email: client.email || '',
+      recipient_phone: client.phone || '',
+    });
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">{client.name}</h2>
-          <p className="text-muted-foreground">Client Code: {client.client_code}</p>
-        </div>
-        <div className="flex gap-2">
-          <Badge variant={client.status === 'active' ? 'default' : 'secondary'}>
-            {client.status || 'Active'}
-          </Badge>
-          <Button variant="outline" onClick={onClose}>
-            Close
-          </Button>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">Client Details</h2>
+            <div className="flex gap-2">
+              {isEditing ? (
+                <>
+                  <Button onClick={handleSave} disabled={isUpdating}>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save
+                  </Button>
+                  <Button variant="outline" onClick={handleCancel}>
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                </>
+              ) : (
+                <Button onClick={() => setIsEditing(true)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              )}
+              <Button variant="outline" onClick={onClose}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <Tabs defaultValue="details" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="communications">Communications</TabsTrigger>
+              <TabsTrigger value="documents">Documents</TabsTrigger>
+              <TabsTrigger value="contacts">Contacts</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="details">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Basic Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label>Client Code</Label>
+                      <Input value={client.client_code} disabled />
+                    </div>
+                    
+                    <div>
+                      <Label>Company Name</Label>
+                      {isEditing ? (
+                        <Input
+                          value={editedClient.name}
+                          onChange={(e) => setEditedClient({ ...editedClient, name: e.target.value })}
+                        />
+                      ) : (
+                        <Input value={client.name} disabled />
+                      )}
+                    </div>
+
+                    <div>
+                      <Label>Contact Person</Label>
+                      {isEditing ? (
+                        <Input
+                          value={editedClient.contact_person || ''}
+                          onChange={(e) => setEditedClient({ ...editedClient, contact_person: e.target.value })}
+                        />
+                      ) : (
+                        <Input value={client.contact_person || ''} disabled />
+                      )}
+                    </div>
+
+                    <div>
+                      <Label>Email</Label>
+                      {isEditing ? (
+                        <Input
+                          type="email"
+                          value={editedClient.email || ''}
+                          onChange={(e) => setEditedClient({ ...editedClient, email: e.target.value })}
+                        />
+                      ) : (
+                        <Input value={client.email || ''} disabled />
+                      )}
+                    </div>
+
+                    <div>
+                      <Label>Phone</Label>
+                      {isEditing ? (
+                        <Input
+                          value={editedClient.phone || ''}
+                          onChange={(e) => setEditedClient({ ...editedClient, phone: e.target.value })}
+                        />
+                      ) : (
+                        <Input value={client.phone || ''} disabled />
+                      )}
+                    </div>
+
+                    <div>
+                      <Label>Status</Label>
+                      <Badge variant={client.status === 'active' ? 'default' : 'secondary'}>
+                        {client.status}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Business Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label>Business Type</Label>
+                      {isEditing ? (
+                        <Input
+                          value={editedClient.business_type || ''}
+                          onChange={(e) => setEditedClient({ ...editedClient, business_type: e.target.value })}
+                        />
+                      ) : (
+                        <Input value={client.business_type || ''} disabled />
+                      )}
+                    </div>
+
+                    <div>
+                      <Label>Industry</Label>
+                      {isEditing ? (
+                        <Input
+                          value={editedClient.industry || ''}
+                          onChange={(e) => setEditedClient({ ...editedClient, industry: e.target.value })}
+                        />
+                      ) : (
+                        <Input value={client.industry || ''} disabled />
+                      )}
+                    </div>
+
+                    <div>
+                      <Label>GST Number</Label>
+                      {isEditing ? (
+                        <Input
+                          value={editedClient.gst_number || ''}
+                          onChange={(e) => setEditedClient({ ...editedClient, gst_number: e.target.value })}
+                        />
+                      ) : (
+                        <Input value={client.gst_number || ''} disabled />
+                      )}
+                    </div>
+
+                    <div>
+                      <Label>PAN Number</Label>
+                      {isEditing ? (
+                        <Input
+                          value={editedClient.pan_number || ''}
+                          onChange={(e) => setEditedClient({ ...editedClient, pan_number: e.target.value })}
+                        />
+                      ) : (
+                        <Input value={client.pan_number || ''} disabled />
+                      )}
+                    </div>
+
+                    <div>
+                      <Label>Company Registration Number</Label>
+                      {isEditing ? (
+                        <Input
+                          value={editedClient.company_registration_number || ''}
+                          onChange={(e) => setEditedClient({ ...editedClient, company_registration_number: e.target.value })}
+                        />
+                      ) : (
+                        <Input value={client.company_registration_number || ''} disabled />
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="communications">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    Communication History
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      New Communication
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg">
+                      <div>
+                        <Label>Type</Label>
+                        <Select value={newCommunication.type} onValueChange={(value: 'email' | 'phone' | 'whatsapp' | 'meeting' | 'document') => 
+                          setNewCommunication({ ...newCommunication, type: value })
+                        }>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="email">
+                              <div className="flex items-center gap-2">
+                                <Mail className="h-4 w-4" />
+                                Email
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="phone">
+                              <div className="flex items-center gap-2">
+                                <Phone className="h-4 w-4" />
+                                Phone Call
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="whatsapp">
+                              <div className="flex items-center gap-2">
+                                <MessageSquare className="h-4 w-4" />
+                                WhatsApp
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="meeting">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4" />
+                                Meeting
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="document">
+                              <div className="flex items-center gap-2">
+                                <FileText className="h-4 w-4" />
+                                Document
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label>Subject</Label>
+                        <Input
+                          value={newCommunication.subject}
+                          onChange={(e) => setNewCommunication({ ...newCommunication, subject: e.target.value })}
+                          placeholder="Communication subject"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <Label>Message</Label>
+                        <Textarea
+                          value={newCommunication.message}
+                          onChange={(e) => setNewCommunication({ ...newCommunication, message: e.target.value })}
+                          placeholder="Communication details"
+                          rows={3}
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <Button onClick={handleAddCommunication} className="w-full">
+                          Add Communication
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="text-center py-8 text-gray-500">
+                      No communications recorded yet.
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="documents">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Client Documents</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8 text-gray-500">
+                    No documents uploaded yet.
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="contacts">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Additional Contacts</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8 text-gray-500">
+                    No additional contacts added yet.
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
-
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="communications">Communications</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5" />
-                  Basic Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Contact Person</label>
-                    <p>{client.contact_person || 'Not specified'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Business Type</label>
-                    <p>{client.business_type || 'Not specified'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Industry</label>
-                    <p>{client.industry || 'Not specified'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Website</label>
-                    <p>{client.website || 'Not specified'}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Phone className="h-5 w-5" />
-                  Contact Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span>{client.email || 'No email provided'}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{client.phone || 'No phone provided'}</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <span>{client.address || 'No address provided'}</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Legal Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">GST Number</label>
-                    <p>{client.gst_number || 'Not provided'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">PAN Number</label>
-                    <p>{client.pan_number || 'Not provided'}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Financial Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Credit Limit</label>
-                    <p>₹{client.credit_limit?.toLocaleString() || '0'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Payment Terms</label>
-                    <p>{client.payment_terms || 30} days</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {client.notes && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Notes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm">{client.notes}</p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="communications">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5" />
-                  Log New Communication
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Type</label>
-                    <select
-                      className="w-full p-2 border rounded-md"
-                      value={communicationData.communication_type}
-                      onChange={(e) => setCommunicationData(prev => ({
-                        ...prev,
-                        communication_type: e.target.value
-                      }))}
-                    >
-                      <option value="email">Email</option>
-                      <option value="phone">Phone Call</option>
-                      <option value="meeting">Meeting</option>
-                      <option value="whatsapp">WhatsApp</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Subject</label>
-                    <Input
-                      value={communicationData.subject}
-                      onChange={(e) => setCommunicationData(prev => ({
-                        ...prev,
-                        subject: e.target.value
-                      }))}
-                      placeholder="Communication subject"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Message</label>
-                  <Textarea
-                    value={communicationData.message}
-                    onChange={(e) => setCommunicationData(prev => ({
-                      ...prev,
-                      message: e.target.value
-                    }))}
-                    placeholder="Communication details..."
-                    rows={4}
-                  />
-                </div>
-                <Button 
-                  onClick={handleSendCommunication}
-                  disabled={isAdding}
-                  className="w-full"
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  {isAdding ? 'Logging...' : 'Log Communication'}
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="documents">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Client Documents
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Document management will be available soon</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
     </div>
   );
 };

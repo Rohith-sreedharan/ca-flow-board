@@ -59,7 +59,10 @@ export const DatabaseCreateTemplateForm: React.FC<Props> = ({ onSuccess }) => {
   const onSubmit = async (data: TemplateFormData) => {
     try {
       const templateData = {
-        ...data,
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        priority: data.priority,
         client_id: selectedClient?.id,
         client_name: selectedClient?.name,
         is_template: true,
@@ -68,6 +71,9 @@ export const DatabaseCreateTemplateForm: React.FC<Props> = ({ onSuccess }) => {
         payable_task_type: data.isPayableTask ? data.payableTaskType : null,
         recurrence_pattern: data.isRecurring ? data.recurrencePattern : null,
         due_date: data.dueDate ? new Date(data.dueDate).toISOString() : null,
+        is_recurring: data.isRecurring,
+        is_payable_task: data.isPayableTask,
+        subtasks: [],
       };
 
       createTemplate(templateData);

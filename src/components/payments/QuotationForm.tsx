@@ -57,7 +57,7 @@ export function QuotationForm({ onSuccess }: QuotationFormProps) {
   const totalAmount = amount + taxAmount;
 
   // Filter payable tasks
-  const payableTasks = tasks.filter(task => task.isPayableTask && !task.quotationSent);
+  const payableTasks = tasks.filter(task => task.is_payable_task && !task.quotation_sent);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
@@ -76,6 +76,7 @@ export function QuotationForm({ onSuccess }: QuotationFormProps) {
         payment_type: values.payment_type,
         status: 'draft',
         sent_via_whatsapp: false,
+        is_deleted: false,
         valid_until: values.valid_until || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       });
 
