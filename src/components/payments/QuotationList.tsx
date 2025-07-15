@@ -51,7 +51,7 @@ export const QuotationList = () => {
   };
 
   const handleCreatePaymentLink = (quotationId: string) => {
-    createPaymentLink(quotationId);
+    createPaymentLink({ quotationId });
   };
 
   if (isLoading) {

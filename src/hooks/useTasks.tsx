@@ -1,6 +1,7 @@
 
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Task, TaskStatus, TaskPriority, TaskCategory, SubTask } from '@/store/slices/tasksSlice';
 
@@ -26,6 +27,28 @@ interface CreateTaskData {
 
 export const useTasks = () => {
   const queryClient = useQueryClient();
+
+  // Real-time subscription for tasks
+  useEffect(() => {
+    const channel = supabase
+      .channel('tasks_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   // Category mapping functions
   const mapDatabaseCategoryToType = (dbCategory: string): TaskCategory => {

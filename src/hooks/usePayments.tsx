@@ -1,5 +1,6 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -34,6 +35,28 @@ export const usePayments = () => {
     },
   });
 
+  // Real-time subscription for quotations
+  useEffect(() => {
+    const channel = supabase
+      .channel('quotations_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'quotations'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['quotations'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   // Get payments
   const { data: payments = [] } = useQuery({
     queryKey: ['payments'],
@@ -52,6 +75,28 @@ export const usePayments = () => {
       return data;
     },
   });
+
+  // Real-time subscription for payments
+  useEffect(() => {
+    const channel = supabase
+      .channel('payments_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'payments'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['payments'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   // Create quotation
   const createQuotation = useMutation({
