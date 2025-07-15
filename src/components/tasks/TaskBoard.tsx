@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { ListFilter, Plus } from 'lucide-react';
+import { ListFilter } from 'lucide-react';
 import { RootState } from '@/store';
 import { Task, TaskStatus } from '@/store/slices/tasksSlice';
 import { Button } from '@/components/ui/button';
@@ -130,11 +130,6 @@ const TaskBoard = ({ tasks, basePath }: TaskBoardProps) => {
               List
             </Button>
           </div>
-          
-          <Button className="bg-ca-blue hover:bg-ca-blue-dark">
-            <Plus className="h-4 w-4 mr-2" />
-            New Task
-          </Button>
         </div>
       </div>
       
