@@ -27,8 +27,8 @@ export const EmployeeTaskSelfAssignment = () => {
                          task.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          task.clientName.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = !statusFilter || task.status === statusFilter;
-    const matchesCategory = !categoryFilter || task.category === categoryFilter;
+    const matchesStatus = !statusFilter || statusFilter === 'all' || task.status === statusFilter;
+    const matchesCategory = !categoryFilter || categoryFilter === 'all' || task.category === categoryFilter;
 
     return matchesSearch && matchesStatus && matchesCategory;
   });
@@ -101,7 +101,7 @@ export const EmployeeTaskSelfAssignment = () => {
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="todo">To Do</SelectItem>
                 <SelectItem value="inprogress">In Progress</SelectItem>
                 <SelectItem value="review">Review</SelectItem>
@@ -112,7 +112,7 @@ export const EmployeeTaskSelfAssignment = () => {
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 <SelectItem value="gst_filing">GST Filing</SelectItem>
                 <SelectItem value="itr_filing">ITR Filing</SelectItem>
                 <SelectItem value="roc_filing">ROC Filing</SelectItem>

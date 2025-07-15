@@ -17,7 +17,7 @@ interface TemplateSelectorProps {
 export function TemplateSelector({ onSelectTemplate, selectedCategory, onCategoryChange }: TemplateSelectorProps) {
   const { taskTemplates } = useSelector((state: RootState) => state.tasks);
 
-  const filteredTemplates = selectedCategory 
+  const filteredTemplates = selectedCategory && selectedCategory !== 'all'
     ? taskTemplates.filter(template => template.category === selectedCategory)
     : taskTemplates;
 
@@ -47,7 +47,7 @@ export function TemplateSelector({ onSelectTemplate, selectedCategory, onCategor
             <SelectValue placeholder="Filter by category" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Categories</SelectItem>
+            <SelectItem value="all">All Categories</SelectItem>
             <SelectItem value="gst_filing">GST Filing</SelectItem>
             <SelectItem value="itr_filing">ITR Filing</SelectItem>
             <SelectItem value="roc_filing">ROC Filing</SelectItem>
