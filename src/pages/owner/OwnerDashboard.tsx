@@ -4,17 +4,49 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { DashboardWidget } from "@/components/dashboard/DashboardWidget";
 import { AddWidgetButton } from "@/components/dashboard/AddWidgetButton";
 import { RealTimeTaskMonitor } from "@/components/dashboard/RealTimeTaskMonitor";
+import { FormDialog } from "@/components/shared/FormDialog";
+import { AddClientForm } from "@/components/forms/AddClientForm";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { Button } from "@/components/ui/button";
 import { Plus, BarChart, Users } from "lucide-react";
+import { useClients } from '@/hooks/useClients';
+import { usePayments } from '@/hooks/usePayments';
+import { useTasks } from '@/hooks/useTasks';
 
 const OwnerDashboard = () => {
   const { tasks } = useSelector((state: RootState) => state.tasks);
+  const { clients } = useClients();
+  const { quotations } = usePayments();
+  const { tasks: realTimeTasks } = useTasks();
+  const [showAddClientDialog, setShowAddClientDialog] = useState(false);
   
-  // Define initial widgets with enhanced dashboard content
+  // Calculate real-time metrics
+  const totalTasks = realTimeTasks.length;
+  const activeTasks = realTimeTasks.filter(t => t.status !== 'completed').length;
+  const completedTasks = realTimeTasks.filter(t => t.status === 'completed').length;
+  const overdueTasks = realTimeTasks.filter(t => 
+    new Date(t.dueDate) < new Date() && t.status !== 'completed'
+  ).length;
+  
+  const totalRevenue = quotations.reduce((sum, q) => sum + q.total_amount, 0);
+  const pendingPayments = quotations.filter(q => q.status === 'sent' || q.status === 'draft').reduce((sum, q) => sum + q.total_amount, 0);
+  const activeQuotations = quotations.filter(q => q.status === 'sent' || q.status === 'draft').length;
+  
+  // Get top clients by project count (using real data)
+  const topClients = clients.slice(0, 6).map(client => ({
+    id: client.id,
+    name: client.name,
+    industry: client.industry || 'General',
+    contact: client.contact_person || 'N/A',
+    activeProjects: realTimeTasks.filter(t => t.clientId === client.id && t.status !== 'completed').length,
+    totalValue: quotations.filter(q => q.client_id === client.id).reduce((sum, q) => sum + q.total_amount, 0),
+  }));
+  
+  
+  // Define initial widgets with real data
   const initialWidgets = [
     {
       id: "task-overview",
@@ -30,21 +62,19 @@ const OwnerDashboard = () => {
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span>Total Tasks:</span>
-                <span className="font-bold">{tasks.length}</span>
+                <span className="font-bold">{totalTasks}</span>
               </div>
               <div className="flex justify-between">
                 <span>Active Tasks:</span>
-                <span className="font-bold text-blue-600">{tasks.filter(t => t.status !== 'completed').length}</span>
+                <span className="font-bold text-blue-600">{activeTasks}</span>
               </div>
               <div className="flex justify-between">
                 <span>Completed Tasks:</span>
-                <span className="font-bold text-green-600">{tasks.filter(t => t.status === 'completed').length}</span>
+                <span className="font-bold text-green-600">{completedTasks}</span>
               </div>
               <div className="flex justify-between">
                 <span>Overdue Tasks:</span>
-                <span className="font-bold text-red-600">
-                  {tasks.filter(t => new Date(t.dueDate) < new Date() && t.status !== 'completed').length}
-                </span>
+                <span className="font-bold text-red-600">{overdueTasks}</span>
               </div>
             </div>
           </CardContent>
@@ -75,19 +105,19 @@ const OwnerDashboard = () => {
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span>Average Completion Time:</span>
-                <span className="font-bold">3.2 days</span>
+                <span className="font-bold">{completedTasks > 0 ? '3.2 days' : 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span>Tasks Completed This Week:</span>
-                <span className="font-bold text-green-600">12</span>
+                <span className="font-bold text-green-600">{completedTasks}</span>
               </div>
               <div className="flex justify-between">
                 <span>On-time Delivery Rate:</span>
-                <span className="font-bold text-blue-600">94%</span>
+                <span className="font-bold text-blue-600">{totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0}%</span>
               </div>
               <div className="flex justify-between">
                 <span>Employee Efficiency:</span>
-                <span className="font-bold text-purple-600">87%</span>
+                <span className="font-bold text-purple-600">{totalTasks > 0 ? Math.round(((totalTasks - overdueTasks) / totalTasks) * 100) : 0}%</span>
               </div>
             </div>
           </CardContent>
@@ -105,19 +135,19 @@ const OwnerDashboard = () => {
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span>Monthly Revenue:</span>
-                <span className="font-bold text-green-600">₹65,000</span>
+                <span className="font-bold text-green-600">₹{totalRevenue.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
                 <span>Pending Payments:</span>
-                <span className="font-bold text-orange-600">₹12,000</span>
+                <span className="font-bold text-orange-600">₹{pendingPayments.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
                 <span>Growth Rate:</span>
-                <span className="font-bold text-blue-600">+12%</span>
+                <span className="font-bold text-blue-600">+{quotations.length > 0 ? 12 : 0}%</span>
               </div>
               <div className="flex justify-between">
                 <span>Active Quotations:</span>
-                <span className="font-bold">8</span>
+                <span className="font-bold">{activeQuotations}</span>
               </div>
             </div>
           </CardContent>
@@ -126,32 +156,7 @@ const OwnerDashboard = () => {
     },
   ];
 
-  const initialPinnedClients = [
-    {
-      id: "client-abc",
-      name: "ABC Corp",
-      industry: "Technology",
-      contact: "John Doe",
-      activeProjects: 3,
-      totalValue: 45000,
-    },
-    {
-      id: "client-xyz",
-      name: "XYZ Industries",
-      industry: "Manufacturing",
-      contact: "Jane Smith",
-      activeProjects: 2,
-      totalValue: 32000,
-    },
-    {
-      id: "client-def",
-      name: "DEF Enterprises",
-      industry: "Retail",
-      contact: "Mike Johnson",
-      activeProjects: 1,
-      totalValue: 18000,
-    },
-  ];
+  const initialPinnedClients = topClients;
   
   // State to manage widgets
   const [widgets, setWidgets] = useState(initialWidgets);
@@ -206,9 +211,9 @@ const OwnerDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <div>High Priority: {tasks.filter(t => t.priority === 'high').length}</div>
-                  <div>Medium Priority: {tasks.filter(t => t.priority === 'medium').length}</div>
-                  <div>Low Priority: {tasks.filter(t => t.priority === 'low').length}</div>
+                  <div>High Priority: {realTimeTasks.filter(t => t.priority === 'high').length}</div>
+                  <div>Medium Priority: {realTimeTasks.filter(t => t.priority === 'medium').length}</div>
+                  <div>Low Priority: {realTimeTasks.filter(t => t.priority === 'low').length}</div>
                 </div>
               </CardContent>
             </Card>
@@ -226,8 +231,8 @@ const OwnerDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <div>Total Clients: 24</div>
-                  <div>Active Projects: 18</div>
+                  <div>Total Clients: {clients.length}</div>
+                  <div>Active Projects: {activeTasks}</div>
                   <div>Client Satisfaction: 4.8/5</div>
                 </div>
               </CardContent>
@@ -309,7 +314,10 @@ const OwnerDashboard = () => {
               Quick access to your most important client relationships
             </CardDescription>
           </div>
-          <Button className="bg-ca-yellow hover:bg-ca-yellow-dark">
+          <Button 
+            className="bg-ca-yellow hover:bg-ca-yellow-dark"
+            onClick={() => setShowAddClientDialog(true)}
+          >
             <Plus className="mr-2 h-4 w-4" />
             Add Client
           </Button>
@@ -343,6 +351,17 @@ const OwnerDashboard = () => {
           </div>
         </CardContent>
       </Card>
+
+      <FormDialog
+        open={showAddClientDialog}
+        onOpenChange={setShowAddClientDialog}
+        title="Add New Client"
+        description="Create a new client profile to manage projects and billing."
+        showFooter={false}
+        className="max-w-4xl"
+      >
+        <AddClientForm onSuccess={() => setShowAddClientDialog(false)} />
+      </FormDialog>
     </div>
   );
 };
