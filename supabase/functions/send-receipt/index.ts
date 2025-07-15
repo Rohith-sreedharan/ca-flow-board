@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -8,8 +7,7 @@ const corsHeaders = {
 };
 
 const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[SEND-RECEIPT] ${step}${detailsStr}`);
+  console.log(`[SEND-RECEIPT] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
 };
 
 serve(async (req) => {
@@ -26,92 +24,105 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    const { paymentId, sendVia } = await req.json();
-    logStep("Request received", { paymentId, sendVia });
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("No authorization header provided");
 
-    // Get payment details with related data
+    const { paymentId, receiptData } = await req.json();
+    logStep("Request data", { paymentId });
+
+    // Get payment details
     const { data: payment, error: paymentError } = await supabaseClient
       .from('payments')
       .select(`
         *,
-        clients(name, email, phone),
-        quotations(quotation_number, amount, tax_amount, total_amount)
+        clients (
+          id, name, email, phone
+        ),
+        quotations (
+          quotation_number
+        )
       `)
       .eq('id', paymentId)
       .single();
 
-    if (paymentError) throw paymentError;
-    logStep("Payment retrieved", { paymentId: payment.payment_id });
+    if (paymentError) {
+      throw new Error(`Error fetching payment: ${paymentError.message}`);
+    }
+
+    logStep("Payment fetched", { id: payment.id, amount: payment.amount });
 
     // Generate receipt content
-    const receiptContent = `
-🧾 PAYMENT RECEIPT
-==================
-Receipt #: ${payment.payment_id}
-Quotation: ${payment.quotations?.quotation_number}
-Client: ${payment.clients?.name}
+    const receiptContent = `🧾 Payment Receipt\n\n` +
+      `Receipt for: ${payment.clients?.name || 'Customer'}\n` +
+      `Payment ID: ${payment.payment_id}\n` +
+      `Amount: ₹${payment.amount}\n` +
+      `Payment Method: ${payment.payment_method || 'Online'}\n` +
+      `Date: ${new Date(payment.paid_at || payment.created_at).toLocaleDateString()}\n\n` +
+      `Thank you for your payment!`;
 
-Amount: ₹${payment.amount}
-Status: ${payment.status}
-Date: ${new Date(payment.paid_at || payment.created_at).toLocaleDateString()}
+    // Create receipt URL (placeholder for actual receipt generation)
+    const receiptUrl = receiptData?.receipt_url || `${req.headers.get("origin")}/receipt/${payment.id}`;
 
-Thank you for your payment!
-    `.trim();
+    // Update payment with receipt information
+    const { error: updateError } = await supabaseClient
+      .from('payments')
+      .update({
+        receipt_sent: true,
+        receipt_sent_at: new Date().toISOString(),
+        receipt_url: receiptUrl,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', paymentId);
 
-    if (sendVia === 'whatsapp' && payment.clients?.phone) {
-      // Send via WhatsApp using deep link
-      const phoneNumber = payment.clients.phone.replace(/[^\d]/g, '');
-      const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(receiptContent)}`;
-      
-      logStep("WhatsApp receipt prepared", { phoneNumber, url: whatsappUrl });
-
-      // Update payment as receipt sent
-      await supabaseClient
-        .from('payments')
-        .update({ 
-          receipt_sent: true, 
-          receipt_sent_at: new Date().toISOString() 
-        })
-        .eq('id', paymentId);
-
-      return new Response(JSON.stringify({ 
-        success: true, 
-        whatsapp_url: whatsappUrl,
-        message: 'Receipt prepared for WhatsApp sending' 
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-
-    } else if (sendVia === 'email' && payment.clients?.email) {
-      // For email sending, you would integrate with an email service
-      // For now, we'll just mark as sent
-      logStep("Email receipt prepared", { email: payment.clients.email });
-
-      await supabaseClient
-        .from('payments')
-        .update({ 
-          receipt_sent: true, 
-          receipt_sent_at: new Date().toISOString() 
-        })
-        .eq('id', paymentId);
-
-      return new Response(JSON.stringify({ 
-        success: true, 
-        message: 'Email receipt functionality to be implemented' 
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-
-    } else {
-      throw new Error('Invalid sending method or missing contact information');
+    if (updateError) {
+      logStep("Error updating payment", updateError);
     }
+
+    // Log communication
+    const communicationData = {
+      communication_type: 'receipt',
+      client_id: payment.client_id,
+      message: receiptContent,
+      status: 'sent',
+      sent_at: new Date().toISOString(),
+      metadata: {
+        payment_id: payment.id,
+        receipt_url: receiptUrl,
+        amount: payment.amount
+      }
+    };
+
+    const { error: commError } = await supabaseClient
+      .from('client_communications')
+      .insert(communicationData);
+
+    if (commError) {
+      logStep("Error logging communication", commError);
+    }
+
+    // Generate WhatsApp link if phone available
+    let whatsappUrl = null;
+    if (payment.clients?.phone) {
+      const cleanPhone = payment.clients.phone.replace(/\D/g, '');
+      const formattedPhone = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone}`;
+      whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(receiptContent)}`;
+    }
+
+    logStep("Receipt processed successfully", { receiptUrl, whatsappUrl });
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      receipt_url: receiptUrl,
+      whatsapp_url: whatsappUrl,
+      message: 'Receipt sent successfully'
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    });
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
-    
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

@@ -129,9 +129,9 @@ export const usePayments = () => {
 
   // Create payment link
   const createPaymentLink = useMutation({
-    mutationFn: async (quotationId: string) => {
+    mutationFn: async ({ quotationId, paymentType = 'payable_task_1' }: { quotationId: string; paymentType?: string }) => {
       const { data, error } = await supabase.functions.invoke('create-payment-link', {
-        body: { quotationId }
+        body: { quotationId, paymentType }
       });
 
       if (error) {

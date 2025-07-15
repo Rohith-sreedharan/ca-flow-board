@@ -252,6 +252,7 @@ export type Database = {
           pan_number: string | null
           payment_terms: number | null
           phone: string | null
+          search_vector: unknown | null
           shipping_address: string | null
           status: string | null
           updated_at: string | null
@@ -276,6 +277,7 @@ export type Database = {
           pan_number?: string | null
           payment_terms?: number | null
           phone?: string | null
+          search_vector?: unknown | null
           shipping_address?: string | null
           status?: string | null
           updated_at?: string | null
@@ -300,6 +302,7 @@ export type Database = {
           pan_number?: string | null
           payment_terms?: number | null
           phone?: string | null
+          search_vector?: unknown | null
           shipping_address?: string | null
           status?: string | null
           updated_at?: string | null
@@ -605,6 +608,7 @@ export type Database = {
           id: string
           is_deleted: boolean | null
           notes: string | null
+          payment_configuration_id: string | null
           payment_link_id: string | null
           payment_link_url: string | null
           payment_terms: string | null
@@ -628,6 +632,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean | null
           notes?: string | null
+          payment_configuration_id?: string | null
           payment_link_id?: string | null
           payment_link_url?: string | null
           payment_terms?: string | null
@@ -651,6 +656,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean | null
           notes?: string | null
+          payment_configuration_id?: string | null
           payment_link_id?: string | null
           payment_link_url?: string | null
           payment_terms?: string | null
@@ -679,6 +685,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotations_payment_configuration_id_fkey"
+            columns: ["payment_configuration_id"]
+            isOneToOne: false
+            referencedRelation: "payment_configurations"
             referencedColumns: ["id"]
           },
           {
@@ -741,6 +754,81 @@ export type Database = {
           },
         ]
       }
+      task_templates: {
+        Row: {
+          assigned_employee_id: string | null
+          category: string
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          deadline: string | null
+          description: string | null
+          id: string
+          is_deleted: boolean
+          is_payable_task: boolean
+          is_recurring: boolean
+          payable_task_type: string | null
+          price: number | null
+          recurrence_pattern: string | null
+          subtasks: Json | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_employee_id?: string | null
+          category: string
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          is_deleted?: boolean
+          is_payable_task?: boolean
+          is_recurring?: boolean
+          payable_task_type?: string | null
+          price?: number | null
+          recurrence_pattern?: string | null
+          subtasks?: Json | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_employee_id?: string | null
+          category?: string
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          is_deleted?: boolean
+          is_payable_task?: boolean
+          is_recurring?: boolean
+          payable_task_type?: string | null
+          price?: number | null
+          recurrence_pattern?: string | null
+          subtasks?: Json | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_templates_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           assigned_to: string[] | null
@@ -766,6 +854,7 @@ export type Database = {
           quotation_number: string | null
           quotation_sent: boolean | null
           recurrence_pattern: string | null
+          search_vector: unknown | null
           status: string
           subtasks: Json | null
           template_id: string | null
@@ -796,6 +885,7 @@ export type Database = {
           quotation_number?: string | null
           quotation_sent?: boolean | null
           recurrence_pattern?: string | null
+          search_vector?: unknown | null
           status?: string
           subtasks?: Json | null
           template_id?: string | null
@@ -826,6 +916,7 @@ export type Database = {
           quotation_number?: string | null
           quotation_sent?: boolean | null
           recurrence_pattern?: string | null
+          search_vector?: unknown | null
           status?: string
           subtasks?: Json | null
           template_id?: string | null
@@ -860,6 +951,10 @@ export type Database = {
       }
       generate_quotation_number: {
         Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_series_number: {
+        Args: { series_type: string; prefix?: string }
         Returns: string
       }
     }

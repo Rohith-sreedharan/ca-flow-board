@@ -1,79 +1,108 @@
-
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const logStep = (step: string, details?: any) => {
+  console.log(`[WHATSAPP-NOTIFICATION] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
+};
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    logStep("Function started");
 
-    const { phoneNumber, message, clientId } = await req.json()
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
 
-    console.log('Sending WhatsApp notification to:', phoneNumber)
+    const { phoneNumber, message, quotationId, type = 'quotation' } = await req.json();
+    logStep("Request data", { phoneNumber, type, quotationId });
 
-    // In a real implementation, you would integrate with WhatsApp Business API
-    // For now, we'll create a WhatsApp deep link
-    const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`
+    // Clean phone number (remove spaces, dashes, etc.)
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    
+    // Ensure phone number starts with country code
+    const formattedPhone = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone}`;
 
-    // Log the communication
-    const { data: communication, error: commError } = await supabase
-      .from('client_communications')
-      .insert({
-        client_id: clientId,
-        communication_type: 'whatsapp',
-        recipient_phone: phoneNumber,
-        message: message,
-        status: 'sent',
-        sent_at: new Date().toISOString(),
-        metadata: {
-          whatsapp_url: whatsappUrl
-        }
-      })
-      .select()
-      .single()
+    // Create WhatsApp deep link
+    const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
 
-    if (commError) {
-      throw commError
+    // Log communication in database
+    const communicationData = {
+      communication_type: 'whatsapp',
+      recipient_phone: phoneNumber,
+      message: message,
+      status: 'sent',
+      sent_at: new Date().toISOString(),
+      metadata: {
+        whatsapp_url: whatsappUrl,
+        quotation_id: quotationId,
+        type: type
+      }
+    };
+
+    if (quotationId) {
+      // Get quotation to find client_id
+      const { data: quotation } = await supabaseClient
+        .from('quotations')
+        .select('client_id')
+        .eq('id', quotationId)
+        .single();
+      
+      if (quotation) {
+        communicationData.client_id = quotation.client_id;
+      }
     }
 
-    console.log('WhatsApp notification logged successfully')
+    const { error: commError } = await supabaseClient
+      .from('client_communications')
+      .insert(communicationData);
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        whatsappUrl,
-        communication,
-        message: 'WhatsApp notification prepared successfully'
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
+    if (commError) {
+      logStep("Error logging communication", commError);
+    }
+
+    // If quotation, update quotation status
+    if (quotationId) {
+      const { error: updateError } = await supabaseClient
+        .from('quotations')
+        .update({
+          sent_via_whatsapp: true,
+          whatsapp_sent_at: new Date().toISOString()
+        })
+        .eq('id', quotationId);
+
+      if (updateError) {
+        logStep("Error updating quotation", updateError);
       }
-    )
+    }
+
+    logStep("WhatsApp link generated successfully", { url: whatsappUrl });
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      whatsapp_url: whatsappUrl,
+      message: 'WhatsApp link generated successfully'
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    });
 
   } catch (error) {
-    console.error('Error in send-whatsapp-notification function:', error)
-    
-    return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        success: false 
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    )
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logStep("ERROR", { message: errorMessage });
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
   }
-})
+});
