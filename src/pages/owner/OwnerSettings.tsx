@@ -27,6 +27,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Separator } from '@/components/ui/separator';
+import { BackendConnectivityTest } from '@/components/testing/BackendConnectivityTest';
 
 const OwnerSettings = () => {
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -47,11 +48,12 @@ const OwnerSettings = () => {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="general">General</TabsTrigger>
               <TabsTrigger value="notifications">Notifications</TabsTrigger>
               <TabsTrigger value="security">Security</TabsTrigger>
               <TabsTrigger value="billing">Billing</TabsTrigger>
+              <TabsTrigger value="testing">Testing</TabsTrigger>
             </TabsList>
 
             <TabsContent value="general" className="space-y-6">
@@ -308,6 +310,17 @@ const OwnerSettings = () => {
                 </div>
                 
                 <Button variant="outline" className="mt-2">View All Invoices</Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="testing" className="space-y-6">
+              <div className="space-y-4 py-4">
+                <h3 className="text-lg font-medium">Backend Connectivity Test</h3>
+                <Separator />
+                <p className="text-sm text-muted-foreground">
+                  Run comprehensive tests to verify all backend systems are connected and working properly.
+                </p>
+                <BackendConnectivityTest />
               </div>
             </TabsContent>
           </Tabs>

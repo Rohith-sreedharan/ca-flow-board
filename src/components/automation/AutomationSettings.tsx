@@ -17,7 +17,6 @@ export const AutomationSettings = () => {
   const [formData, setFormData] = useState({
     auto_invoice_generation: false,
     deadline_reminders_enabled: false,
-    whatsapp_notifications: false,
     reminder_days_before: 3,
   });
 
@@ -26,7 +25,6 @@ export const AutomationSettings = () => {
       setFormData({
         auto_invoice_generation: settings.auto_invoice_generation || false,
         deadline_reminders_enabled: settings.deadline_reminders_enabled || false,
-        whatsapp_notifications: settings.whatsapp_notifications || false,
         reminder_days_before: settings.reminder_days_before || 3,
       });
     }
@@ -147,29 +145,63 @@ export const AutomationSettings = () => {
         </Card>
 
         {/* WhatsApp Notifications */}
-        <Card>
+        <Card className="opacity-75">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageCircle className="h-5 w-5 text-green-600" />
               WhatsApp Automation
-              {formData.whatsapp_notifications && (
-                <Badge variant="secondary" className="bg-green-100 text-green-800">Active</Badge>
-              )}
+              <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200">
+                Coming Soon
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label htmlFor="whatsapp-notifications">Enable WhatsApp notifications</Label>
+              <Label htmlFor="whatsapp-notifications" className="text-muted-foreground">
+                Enable WhatsApp notifications
+              </Label>
               <Switch
                 id="whatsapp-notifications"
-                checked={formData.whatsapp_notifications}
-                onCheckedChange={(checked) => 
-                  setFormData(prev => ({ ...prev, whatsapp_notifications: checked }))
-                }
+                checked={false}
+                disabled={true}
+                onCheckedChange={() => {}}
               />
             </div>
             <p className="text-sm text-muted-foreground">
               Send automated WhatsApp messages for task updates, quotations, and reminders.
+              <br />
+              <span className="text-yellow-600 font-medium">Feature will be available soon!</span>
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* SMS Notifications */}
+        <Card className="opacity-75">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="h-5 w-5 text-blue-600" />
+              SMS Automation
+              <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200">
+                Coming Soon
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="sms-notifications" className="text-muted-foreground">
+                Enable SMS notifications
+              </Label>
+              <Switch
+                id="sms-notifications"
+                checked={false}
+                disabled={true}
+                onCheckedChange={() => {}}
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Send automated SMS messages for urgent task updates and deadline alerts.
+              <br />
+              <span className="text-yellow-600 font-medium">Feature will be available soon!</span>
             </p>
           </CardContent>
         </Card>
