@@ -28,7 +28,7 @@ interface CreateEmployeeData {
   password: string;
 }
 
-const API_BASE = 'http://localhost:3001/api';
+import { API_BASE_URL } from '@/config/api.config';
 
 export const useEmployees = () => {
   const queryClient = useQueryClient();
@@ -46,7 +46,7 @@ export const useEmployees = () => {
 
         // Get all users, we'll filter for employees and admins on frontend
         // Use a high limit to get all users at once for employee management
-        const response = await fetch(`${API_BASE}/users?limit=1000`, {
+        const response = await fetch(`${API_BASE_URL}/users?limit=1000`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -112,7 +112,7 @@ export const useEmployees = () => {
           throw new Error('Authentication Error: Your session has expired. Please log in again.');
         }
         
-        const response = await fetch(`${API_BASE}/users`, {
+        const response = await fetch(`${API_BASE_URL}/users`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -148,7 +148,7 @@ export const useEmployees = () => {
           throw new Error('Authentication Error: Your session has expired. Please log in again.');
         }
         
-        const response = await fetch(`${API_BASE}/users/bulk-delete`, {
+        const response = await fetch(`${API_BASE_URL}/users/bulk-delete`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -186,7 +186,7 @@ export const useEmployees = () => {
           throw new Error('Authentication Error: Your session has expired. Please log in again.');
         }
         
-        const response = await fetch(`${API_BASE}/users/bulk-status`, {
+        const response = await fetch(`${API_BASE_URL}/users/bulk-status`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -224,7 +224,7 @@ export const useEmployees = () => {
           throw new Error('Authentication Error: Your session has expired. Please log in again.');
         }
         
-        const response = await fetch(`${API_BASE}/users/bulk-department`, {
+        const response = await fetch(`${API_BASE_URL}/users/bulk-department`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -262,7 +262,7 @@ export const useEmployees = () => {
           throw new Error('Authentication Error: Your session has expired. Please log in again.');
         }
         
-        const response = await fetch(`${API_BASE}/users/bulk-import`, {
+        const response = await fetch(`${API_BASE_URL}/users/bulk-import`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './useAuth';
 import { getValidatedToken } from '@/lib/auth';
+import { API_BASE_URL } from '@/config/api.config';
 
 interface InvoiceFilters {
   search?: string;
@@ -102,7 +103,7 @@ export const useInvoices = (filters: InvoiceFilters = {}) => {
       if (filters.page) searchParams.append('page', filters.page.toString());
       if (filters.limit) searchParams.append('limit', filters.limit.toString());
 
-      const response = await fetch(`http://localhost:3001/api/invoices?${searchParams}`, {
+      const response = await fetch(`${API_BASE_URL}/invoices?${searchParams}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -126,7 +127,7 @@ export const useInvoice = (invoiceId: string | undefined) => {
     queryKey: ['invoice', invoiceId],
     queryFn: async (): Promise<InvoiceResponse> => {
       const token = getValidatedToken();
-      const response = await fetch(`http://localhost:3001/api/invoices/${invoiceId}`, {
+      const response = await fetch(`${API_BASE_URL}/invoices/${invoiceId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -150,7 +151,7 @@ export const useCreateInvoice = () => {
   return useMutation({
     mutationFn: async (invoiceData: Partial<Invoice>): Promise<InvoiceResponse> => {
       const token = getValidatedToken();
-      const response = await fetch('http://localhost:3001/api/invoices', {
+      const response = await fetch(API_BASE_URL + '/invoices', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -184,7 +185,7 @@ export const useUpdateInvoice = () => {
       data: Partial<Invoice> 
     }): Promise<InvoiceResponse> => {
       const token = getValidatedToken();
-      const response = await fetch(`http://localhost:3001/api/invoices/${invoiceId}`, {
+      const response = await fetch(`${API_BASE_URL}/invoices/${invoiceId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -213,7 +214,7 @@ export const useDeleteInvoice = () => {
   return useMutation({
     mutationFn: async (invoiceId: string): Promise<{ success: boolean; message: string }> => {
       const token = getValidatedToken();
-      const response = await fetch(`http://localhost:3001/api/invoices/${invoiceId}`, {
+      const response = await fetch(`${API_BASE_URL}/invoices/${invoiceId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -246,7 +247,7 @@ export const useUpdateInvoiceStatus = () => {
       status: Invoice['status'] 
     }): Promise<InvoiceResponse> => {
       const token = getValidatedToken();
-      const response = await fetch(`http://localhost:3001/api/invoices/${invoiceId}/status`, {
+      const response = await fetch(`${API_BASE_URL}/invoices/${invoiceId}/status`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -286,7 +287,7 @@ export const useAddPayment = () => {
       }
     }): Promise<InvoiceResponse> => {
       const token = getValidatedToken();
-      const response = await fetch(`http://localhost:3001/api/invoices/${invoiceId}/payments`, {
+      const response = await fetch(`${API_BASE_URL}/invoices/${invoiceId}/payments`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -315,7 +316,7 @@ export const useBulkDeleteInvoices = () => {
   return useMutation({
     mutationFn: async (invoiceIds: string[]): Promise<{ success: boolean; message: string; deletedCount: number }> => {
       const token = getValidatedToken();
-      const response = await fetch('http://localhost:3001/api/invoices/bulk-delete', {
+      const response = await fetch(API_BASE_URL + '/invoices/bulk-delete', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -349,7 +350,7 @@ export const useBulkUpdateInvoiceStatus = () => {
       status: string 
     }): Promise<{ success: boolean; message: string; modifiedCount: number }> => {
       const token = getValidatedToken();
-      const response = await fetch('http://localhost:3001/api/invoices/bulk-status', {
+      const response = await fetch(API_BASE_URL + '/invoices/bulk-status', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

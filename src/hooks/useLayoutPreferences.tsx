@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
 
 export interface LayoutPreference {
   _id?: string;
@@ -38,6 +38,7 @@ export interface LayoutPreference {
 }
 
 import { getValidatedToken } from '@/lib/auth';
+import { API_BASE_URL } from '@/config/api.config';
 
 const createHeaders = () => {
   const token = getValidatedToken();
@@ -49,8 +50,8 @@ const createHeaders = () => {
 // API functions
 const fetchLayoutPreferences = async (layoutType?: string): Promise<LayoutPreference[]> => {
   const url = layoutType 
-    ? `${API_BASE}/layouts/type/${layoutType}`
-    : `${API_BASE}/layouts`;
+    ? `${API_BASE_URL}/layouts/type/${layoutType}`
+    : `${API_BASE_URL}/layouts`;
     
   const response = await fetch(url, {
     headers: createHeaders(),
@@ -65,7 +66,7 @@ const fetchLayoutPreferences = async (layoutType?: string): Promise<LayoutPrefer
 };
 
 const fetchDefaultLayout = async (layoutType: string): Promise<LayoutPreference> => {
-  const response = await fetch(`${API_BASE}/layouts/default/${layoutType}`, {
+  const response = await fetch(`${API_BASE_URL}/layouts/default/${layoutType}`, {
     headers: createHeaders(),
   });
   
@@ -78,7 +79,7 @@ const fetchDefaultLayout = async (layoutType: string): Promise<LayoutPreference>
 };
 
 const createLayoutPreference = async (layout: Omit<LayoutPreference, '_id' | 'createdAt' | 'updatedAt'>): Promise<LayoutPreference> => {
-  const response = await fetch(`${API_BASE}/layouts`, {
+  const response = await fetch(`${API_BASE_URL}/layouts`, {
     method: 'POST',
     headers: createHeaders(),
     body: JSON.stringify(layout),
@@ -94,7 +95,7 @@ const createLayoutPreference = async (layout: Omit<LayoutPreference, '_id' | 'cr
 };
 
 const updateLayoutPreference = async ({ id, ...layout }: Partial<LayoutPreference> & { id: string }): Promise<LayoutPreference> => {
-  const response = await fetch(`${API_BASE}/layouts/${id}`, {
+  const response = await fetch(`${API_BASE_URL}/layouts/${id}`, {
     method: 'PUT',
     headers: createHeaders(),
     body: JSON.stringify(layout),
@@ -110,7 +111,7 @@ const updateLayoutPreference = async ({ id, ...layout }: Partial<LayoutPreferenc
 };
 
 const deleteLayoutPreference = async (id: string): Promise<void> => {
-  const response = await fetch(`${API_BASE}/layouts/${id}`, {
+  const response = await fetch(`${API_BASE_URL}/layouts/${id}`, {
     method: 'DELETE',
     headers: createHeaders(),
   });
@@ -122,7 +123,7 @@ const deleteLayoutPreference = async (id: string): Promise<void> => {
 };
 
 const setDefaultLayout = async (id: string): Promise<LayoutPreference> => {
-  const response = await fetch(`${API_BASE}/layouts/${id}/default`, {
+  const response = await fetch(`${API_BASE_URL}/layouts/${id}/default`, {
     method: 'PATCH',
     headers: createHeaders(),
   });

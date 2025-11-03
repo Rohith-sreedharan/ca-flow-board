@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { getValidatedToken } from '@/lib/auth';
+import { API_BASE_URL } from '@/config/api.config';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
 
 interface SystemVitals {
   cpu?: {

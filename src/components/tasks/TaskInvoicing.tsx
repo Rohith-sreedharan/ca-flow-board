@@ -8,8 +8,9 @@ import { Badge } from '../ui/badge';
 import { FileText, Send, IndianRupee, Calendar } from 'lucide-react';
 import { getValidatedToken } from '@/lib/auth';
 import { toast } from 'sonner';
+import { API_BASE_URL } from '@/config/api.config';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
 
 export const TaskInvoicing = ({ task, client }) => {
   const [isGenerating, setIsGenerating] = useState(false);

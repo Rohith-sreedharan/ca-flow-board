@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { getValidatedToken } from '@/lib/auth';
 import { Task, TaskStatus, TaskPriority, TaskCategory, SubTask } from '@/store/slices/tasksSlice';
+import { API_BASE_URL } from '@/config/api.config';
 
 interface CreateTaskData {
   title: string;
@@ -24,8 +25,6 @@ interface CreateTaskData {
   subtasks?: any[];
   [key: string]: unknown;
 }
-
-const API_BASE = 'http://localhost:3001/api';
 
 export const useTasks = () => {
   const queryClient = useQueryClient();
@@ -71,7 +70,7 @@ export const useTasks = () => {
           throw new Error('Authentication token not found');
         }
 
-        const response = await fetch(`${API_BASE}/tasks`, {
+        const response = await fetch(`${API_BASE_URL}/tasks`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -218,7 +217,7 @@ export const useTasks = () => {
           throw new Error('Authentication token not found');
         }
 
-        const response = await fetch(`${API_BASE}/tasks`, {
+        const response = await fetch(`${API_BASE_URL}/tasks`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -258,7 +257,7 @@ export const useTasks = () => {
           throw new Error('Authentication token not found');
         }
 
-        const response = await fetch(`${API_BASE}/tasks/${taskId}`, {
+        const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -301,7 +300,7 @@ export const useTasks = () => {
           throw new Error('Authentication token not found');
         }
 
-        const response = await fetch(`${API_BASE}/tasks/${taskId}`, {
+        const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -341,7 +340,7 @@ export const useTasks = () => {
           throw new Error('Authentication token not found');
         }
 
-        const response = await fetch(`${API_BASE}/tasks/${taskId}`, {
+        const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -377,7 +376,7 @@ export const useTasks = () => {
           throw new Error('Authentication token not found');
         }
 
-        const response = await fetch(`${API_BASE}/tasks/${taskId}/archive`, {
+        const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/archive`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -409,7 +408,7 @@ export const useTasks = () => {
   const bulkDeleteTasks = useMutation({
     mutationFn: async (taskIds: string[]): Promise<{ success: boolean; message: string; deletedCount: number }> => {
       const token = getValidatedToken();
-      const response = await fetch(`${API_BASE}/tasks/bulk-delete`, {
+      const response = await fetch(`${API_BASE_URL}/tasks/bulk-delete`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -438,7 +437,7 @@ export const useTasks = () => {
       status: string 
     }): Promise<{ success: boolean; message: string; modifiedCount: number }> => {
       const token = getValidatedToken();
-      const response = await fetch(`${API_BASE}/tasks/bulk-status`, {
+      const response = await fetch(`${API_BASE_URL}/tasks/bulk-status`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -467,7 +466,7 @@ export const useTasks = () => {
       assignedTo: string 
     }): Promise<{ success: boolean; message: string; modifiedCount: number }> => {
       const token = getValidatedToken();
-      const response = await fetch(`${API_BASE}/tasks/bulk-assign`, {
+      const response = await fetch(`${API_BASE_URL}/tasks/bulk-assign`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -496,7 +495,7 @@ export const useTasks = () => {
       isArchived?: boolean 
     }): Promise<{ success: boolean; message: string; modifiedCount: number }> => {
       const token = getValidatedToken();
-      const response = await fetch(`${API_BASE}/tasks/bulk-archive`, {
+      const response = await fetch(`${API_BASE_URL}/tasks/bulk-archive`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

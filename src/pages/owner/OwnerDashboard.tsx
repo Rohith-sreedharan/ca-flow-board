@@ -35,6 +35,7 @@ import { AIDashboardCards } from '@/components/ai/AIDashboardCards';
 import { toast } from '@/hooks/use-toast';
 import apiClient from '@/services/api';
 import OnboardingWizard from '@/components/onboarding/OnboardingWizard';
+import { API_BASE_URL } from '@/config/api.config';
 
 const OwnerDashboard = () => {
   const { clients } = useClients();
@@ -49,7 +50,7 @@ const OwnerDashboard = () => {
   useEffect(() => {
     const checkAIStatus = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/ai/status`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL || API_BASE_URL + ''}/ai/status`);
         const data = await response.json();
         setAiConfigured(data.configured);
       } catch (error) {
@@ -734,7 +735,7 @@ const OwnerDashboardWithOnboarding = () => {
         }
 
         // Check if firm has complete profile
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/settings/firm`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || API_BASE_URL + ''}/settings/firm`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }

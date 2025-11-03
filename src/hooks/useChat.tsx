@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { toast } from 'sonner';
 import { getValidatedToken } from '@/lib/auth';
+import { API_BASE_URL, buildWsUrl } from '@/config/api.config';
 
 export interface ChatMessage {
   _id: string;
@@ -76,7 +77,7 @@ export const useChat = () => {
       const token = getValidatedToken();
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
-      const response = await fetch('http://localhost:3001/api/chat/rooms', { headers });
+      const response = await fetch(API_BASE_URL + '/chat/rooms', { headers });
       
       if (!response.ok) {
         throw new Error('Failed to fetch chat rooms');
@@ -100,7 +101,7 @@ export const useChat = () => {
       const token = getValidatedToken();
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
-      const response = await fetch(`http://localhost:3001/api/chat/rooms/${activeRoom}/messages`, { headers });
+      const response = await fetch(`${API_BASE_URL}/chat/rooms/${activeRoom}/messages`, { headers });
       
       if (!response.ok) {
         throw new Error('Failed to fetch messages');
@@ -121,7 +122,7 @@ export const useChat = () => {
       const token = getValidatedToken();
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
-      const response = await fetch(`http://localhost:3001/api/chat/rooms/${roomId}/messages`, {
+      const response = await fetch(`${API_BASE_URL}/chat/rooms/${roomId}/messages`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ content, type }),
@@ -153,7 +154,7 @@ export const useChat = () => {
       const token = getValidatedToken();
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
-      const response = await fetch('http://localhost:3001/api/chat/rooms', {
+      const response = await fetch(API_BASE_URL + '/chat/rooms', {
         method: 'POST',
         headers,
         body: JSON.stringify({ name, type, participants }),
@@ -181,7 +182,7 @@ export const useChat = () => {
       const token = getValidatedToken();
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
-      const response = await fetch(`http://localhost:3001/api/chat/rooms/${roomId}/read`, {
+      const response = await fetch(`${API_BASE_URL}/chat/rooms/${roomId}/read`, {
         method: 'POST',
         headers,
       });
@@ -206,7 +207,7 @@ export const useChat = () => {
 
     const connect = () => {
   const wsToken = getValidatedToken();
-  const wsUrl = wsToken ? `ws://localhost:3001/chat?token=${wsToken}` : `ws://localhost:3001/chat`;
+  const wsUrl = wsToken ? `buildWsUrl('chat')?token=${wsToken}` : `buildWsUrl('chat')`;
   ws = new WebSocket(wsUrl);
       
       ws.onopen = () => {

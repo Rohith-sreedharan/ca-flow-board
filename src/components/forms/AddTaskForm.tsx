@@ -20,6 +20,7 @@ import { getValidatedToken } from '@/lib/auth';
 import { useClients } from '@/hooks/useClients';
 import { useEmployees } from '@/hooks/useEmployees';
 import { useTasks } from '@/hooks/useTasks';
+import { API_BASE_URL } from '@/config/api.config';
 
 const subtaskSchema = z.object({
   title: z.string(),
@@ -67,7 +68,7 @@ const formSchema = z.object({
 });
 
 export function AddTaskForm({ onSuccess }: { onSuccess: () => void }) {
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+  
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDraftSaving, setIsDraftSaving] = useState(false);
