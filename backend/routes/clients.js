@@ -612,7 +612,8 @@ router.post('/bulk-import', auth, async (req, res) => {
           pan_number: 'panNumber',
           business_type: 'businessType',
           payment_terms: 'paymentTerms',
-          credit_limit: 'creditLimit'
+          credit_limit: 'creditLimit',
+          client_code: 'clientCode'
         };
 
         Object.keys(fieldMappings).forEach(frontendField => {
@@ -622,9 +623,43 @@ router.post('/bulk-import', auth, async (req, res) => {
           }
         });
 
+        // Normalize business type to match enum values
+        if (processedData.businessType) {
+          const businessTypeMap = {
+            'proprietorship': 'proprietorship',
+            'sole proprietorship': 'proprietorship',
+            'partnership': 'partnership',
+            'private limited': 'private_limited',
+            'private company': 'private_limited',
+            'pvt ltd': 'private_limited',
+            'pvt. ltd.': 'private_limited',
+            'public limited': 'public_limited',
+            'public company': 'public_limited',
+            'llp': 'llp',
+            'limited liability partnership': 'llp',
+            'trust': 'trust',
+            'society': 'society',
+            'huf': 'huf',
+            'hindu undivided family': 'huf',
+            'other': 'other'
+          };
+          
+          const normalizedType = businessTypeMap[processedData.businessType.toLowerCase().trim()];
+          processedData.businessType = normalizedType || 'other';
+        }
+
         // Normalize status to lowercase (if provided)
         if (processedData.status && typeof processedData.status === 'string') {
-          processedData.status = processedData.status.toLowerCase();
+          processedData.status = processedData.status.toLowerCase().trim();
+          // Map common status values
+          const statusMap = {
+            'active': 'active',
+            'inactive': 'inactive',
+            'suspended': 'suspended',
+            'pending': 'inactive',
+            'disabled': 'inactive'
+          };
+          processedData.status = statusMap[processedData.status] || 'active';
         }
 
         // Convert numeric fields to proper types
@@ -648,6 +683,18 @@ router.post('/bulk-import', auth, async (req, res) => {
 
         // Create and save client
         const client = new Client(processedData);
+        
+        // Validate before saving
+        const validationError = client.validateSync();
+        if (validationError) {
+          console.error(`Validation failed for client ${clientData.name}:`, validationError.message);
+          results.failed.push({
+            data: clientData,
+            error: `Validation failed: ${validationError.message}`
+          });
+          continue;
+        }
+        
         await client.save();
 
         // Fetch GST/CIN data if provided

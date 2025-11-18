@@ -281,7 +281,7 @@ const OwnerClients = () => {
       pan_number: 'AAAAA0000A',
       address: '123 Business Street, City, State - 400001',
       status: 'Active',
-      payment_terms: '30 days',
+      payment_terms: '30',
       credit_limit: '100000'
     }];
 
@@ -289,9 +289,30 @@ const OwnerClients = () => {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Clients Template');
     
+    // Add instructions sheet
+    const instructions = [
+      { Field: 'client_code', Description: 'Unique client code (optional)', Example: 'CLI001' },
+      { Field: 'name', Description: 'Client company name (required)', Example: 'ABC Private Limited' },
+      { Field: 'contact_person', Description: 'Primary contact person name', Example: 'John Doe' },
+      { Field: 'email', Description: 'Contact email address', Example: 'client@company.com' },
+      { Field: 'phone', Description: 'Contact phone number', Example: '+91 9876543210' },
+      { Field: 'business_type', Description: 'Business type (Private Company, LLP, Partnership, etc.)', Example: 'Private Limited' },
+      { Field: 'industry', Description: 'Industry sector', Example: 'Manufacturing' },
+      { Field: 'gst_number', Description: 'GST number (15 characters)', Example: '22AAAAA0000A1Z5' },
+      { Field: 'pan_number', Description: 'PAN number (10 characters)', Example: 'AAAAA0000A' },
+      { Field: 'address', Description: 'Business address', Example: '123 Street, City, State - PIN' },
+      { Field: 'status', Description: 'Client status (Active/Inactive)', Example: 'Active' },
+      { Field: 'payment_terms', Description: 'Payment terms in days', Example: '30' },
+      { Field: 'credit_limit', Description: 'Credit limit amount', Example: '100000' }
+    ];
+    
+    const instructionsSheet = XLSX.utils.json_to_sheet(instructions);
+    XLSX.utils.book_append_sheet(workbook, instructionsSheet, 'Instructions');
+    
     // Auto-size columns
     const cols = Object.keys(templateData[0]).map(() => ({ width: 20 }));
     worksheet['!cols'] = cols;
+    instructionsSheet['!cols'] = [{ width: 20 }, { width: 50 }, { width: 25 }];
     
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -322,36 +343,48 @@ const OwnerClients = () => {
       jsonData.forEach((row, index) => {
         const rowNumber = index + 2; // Excel row number (accounting for header)
         
-        if (!row.name) {
+        // Required field validation
+        if (!row.name || row.name.toString().trim() === '') {
           errors.push(`Row ${rowNumber}: Client name is required`);
           return;
         }
 
-        if (row.email && !isValidEmail(row.email)) {
-          errors.push(`Row ${rowNumber}: Invalid email format`);
+        // Email validation (if provided)
+        if (row.email && row.email.toString().trim() !== '' && !isValidEmail(row.email.toString().trim())) {
+          errors.push(`Row ${rowNumber}: Invalid email format - ${row.email}`);
           return;
         }
 
-        if (row.gst_number && !isValidGST(row.gst_number)) {
-          errors.push(`Row ${rowNumber}: Invalid GST number format`);
+        // GST validation (if provided)
+        if (row.gst_number && row.gst_number.toString().trim() !== '' && !isValidGST(row.gst_number.toString().trim())) {
+          errors.push(`Row ${rowNumber}: Invalid GST number format - ${row.gst_number}`);
           return;
         }
 
-        validClients.push({
-          client_code: row.client_code || '',
-          name: row.name,
-          contact_person: row.contact_person || '',
-          email: row.email || '',
-          phone: row.phone || '',
-          business_type: row.business_type || '',
-          industry: row.industry || '',
-          gst_number: row.gst_number || '',
-          pan_number: row.pan_number || '',
-          address: row.address || '',
-          status: row.status || 'Active',
-          payment_terms: row.payment_terms || '',
-          credit_limit: row.credit_limit || ''
-        });
+        // PAN validation (if provided)
+        if (row.pan_number && row.pan_number.toString().trim() !== '' && !isValidPAN(row.pan_number.toString().trim())) {
+          errors.push(`Row ${rowNumber}: Invalid PAN number format - ${row.pan_number}`);
+          return;
+        }
+
+        // Build client object with all fields
+        const clientData: any = {
+          name: row.name.toString().trim(),
+          client_code: row.client_code ? row.client_code.toString().trim() : '',
+          contact_person: row.contact_person ? row.contact_person.toString().trim() : '',
+          email: row.email ? row.email.toString().trim() : '',
+          phone: row.phone ? row.phone.toString().trim() : '',
+          business_type: row.business_type ? row.business_type.toString().trim() : '',
+          industry: row.industry ? row.industry.toString().trim() : '',
+          gst_number: row.gst_number ? row.gst_number.toString().trim().toUpperCase() : '',
+          pan_number: row.pan_number ? row.pan_number.toString().trim().toUpperCase() : '',
+          address: row.address ? row.address.toString().trim() : '',
+          status: row.status ? row.status.toString().trim() : 'Active',
+          payment_terms: row.payment_terms ? row.payment_terms.toString().trim() : '',
+          credit_limit: row.credit_limit ? row.credit_limit.toString().trim() : ''
+        };
+
+        validClients.push(clientData);
       });
 
       if (errors.length > 0) {
@@ -392,6 +425,10 @@ const OwnerClients = () => {
 
   const isValidGST = (gst) => {
     return /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gst);
+  };
+
+  const isValidPAN = (pan) => {
+    return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan);
   };
 
   if (isLoading) {

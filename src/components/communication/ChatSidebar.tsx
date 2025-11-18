@@ -682,10 +682,10 @@ export const ChatSidebar = ({ isOpen, onToggle }: ChatSidebarProps) => {
                         {room.type === 'direct' && (
                           <div className="relative">
                             <Avatar className="h-10 w-10">
-                              <AvatarImage src={room.participants[1]?.user?.avatar} />
-                              <AvatarFallback className="text-sm">
-                                {getInitials(room.participants[1]?.user?.fullName || 'U')}
-                              </AvatarFallback>
+                                <AvatarImage src={room.participants[1]?.user?.avatar || undefined} />
+                                <AvatarFallback className="text-sm">
+                                  {getInitials(room.participants[1]?.user?.fullName || room.participants[1]?.user?.username || 'U')}
+                                </AvatarFallback>
                             </Avatar>
                             {isUserOnline(room.participants[1]?.user?._id) && (
                               <Circle className="absolute -bottom-0.5 -right-0.5 h-3 w-3 fill-green-500 text-green-500 border-2 border-background rounded-full" />
@@ -735,9 +735,9 @@ export const ChatSidebar = ({ isOpen, onToggle }: ChatSidebarProps) => {
                   )}
                   {activeRoomData.type === 'direct' && (
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={activeRoomData.participants[1]?.user?.avatar} />
+                      <AvatarImage src={activeRoomData.participants[1]?.user?.avatar || undefined} />
                       <AvatarFallback>
-                        {getInitials(activeRoomData.participants[1]?.user?.fullName || 'U')}
+                        {getInitials(activeRoomData.participants[1]?.user?.fullName || activeRoomData.participants[1]?.user?.username || 'U')}
                       </AvatarFallback>
                     </Avatar>
                   )}
@@ -811,14 +811,19 @@ export const ChatSidebar = ({ isOpen, onToggle }: ChatSidebarProps) => {
                               <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
                                 🤖
                               </AvatarFallback>
-                            ) : (
-                              <>
-                                <AvatarImage src={message.sender.avatar} />
-                                <AvatarFallback>
-                                  {getInitials(message.sender.fullName)}
-                                </AvatarFallback>
-                              </>
-                            )}
+                            ) : (() => {
+                              const sender = message.sender || {} as any;
+                              const senderName = sender.fullName || sender.username || 'U';
+                              const senderAvatar = sender.avatar || undefined;
+                              return (
+                                <>
+                                  <AvatarImage src={senderAvatar} />
+                                  <AvatarFallback>
+                                    {getInitials(senderName)}
+                                  </AvatarFallback>
+                                </>
+                              );
+                            })()}
                           </Avatar>
                           <div className={`flex-1 min-w-0 ${shouldAlignRight ? 'text-right' : ''}`}>
                             <div className={`flex items-center gap-2 mb-1 ${shouldAlignRight ? 'flex-row-reverse' : ''}`}>
@@ -871,8 +876,8 @@ export const ChatSidebar = ({ isOpen, onToggle }: ChatSidebarProps) => {
                                   onClick={() => handleAutocompleteSelect(u)}
                                 >
                                   <Avatar className="h-6 w-6">
-                                    <AvatarImage src={u.avatar} />
-                                    <AvatarFallback className="text-xs">{getInitials(u.fullName)}</AvatarFallback>
+                                    <AvatarImage src={u?.avatar || undefined} />
+                                    <AvatarFallback className="text-xs">{getInitials(u.fullName || u.username || 'U')}</AvatarFallback>
                                   </Avatar>
                                   <div className="flex-1 min-w-0">
                                     <div className="text-sm font-medium truncate">{u.fullName}</div>
@@ -1027,13 +1032,13 @@ export const ChatSidebar = ({ isOpen, onToggle }: ChatSidebarProps) => {
                         className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer transition-colors"
                         onClick={() => toggleUserSelection(user._id)}
                       >
-                        <div className="relative">
+                          <div className="relative">
                           <Avatar className="h-10 w-10">
-                            <AvatarImage src={user.avatar} />
-                            <AvatarFallback>{getInitials(user.fullName)}</AvatarFallback>
+                            <AvatarImage src={user?.avatar || undefined} />
+                            <AvatarFallback>{getInitials(user.fullName || user.username || 'U')}</AvatarFallback>
                           </Avatar>
                           <div className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background ${
-                            user.isOnline ? 'bg-green-500' : 'bg-gray-400'
+                            user?.isOnline ? 'bg-green-500' : 'bg-gray-400'
                           }`} />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -1110,8 +1115,8 @@ export const ChatSidebar = ({ isOpen, onToggle }: ChatSidebarProps) => {
                       >
                         <div className="relative">
                           <Avatar className="h-11 w-11">
-                            <AvatarImage src={teamUser.avatar} />
-                            <AvatarFallback>{getInitials(teamUser.fullName)}</AvatarFallback>
+                            <AvatarImage src={teamUser?.avatar || undefined} />
+                            <AvatarFallback>{getInitials(teamUser.fullName || teamUser.username || 'U')}</AvatarFallback>
                           </Avatar>
                           <div className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-background ${
                             teamUser.isOnline ? 'bg-green-500' : 'bg-gray-400'
@@ -1240,8 +1245,17 @@ export const ChatSidebar = ({ isOpen, onToggle }: ChatSidebarProps) => {
                         }}
                       >
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={message.sender.avatar} />
-                          <AvatarFallback>{getInitials(message.sender.fullName)}</AvatarFallback>
+                          {(() => {
+                            const sender = message.sender || {} as any;
+                            const senderName = sender.fullName || sender.username || 'U';
+                            const senderAvatar = sender.avatar || undefined;
+                            return (
+                              <>
+                                <AvatarImage src={senderAvatar} />
+                                <AvatarFallback>{getInitials(senderName)}</AvatarFallback>
+                              </>
+                            );
+                          })()}
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
@@ -1338,26 +1352,35 @@ export const ChatSidebar = ({ isOpen, onToggle }: ChatSidebarProps) => {
                   </div>
                   <ScrollArea className="h-[250px] border rounded-lg">
                     <div className="p-2 space-y-1">
-                      {activeRoomData.participants.map((participant: any) => (
-                        <div key={participant._id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
-                          <div className="relative">
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage src={participant.user.avatar} />
-                              <AvatarFallback>{getInitials(participant.user.fullName)}</AvatarFallback>
-                            </Avatar>
-                            {participant.user.isOnline && (
-                              <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background bg-green-500" />
+                      {activeRoomData.participants.map((participant: any) => {
+                        const pUser = participant?.user || null;
+                        const keyId = participant?._id || pUser?._id || Math.random().toString(36).slice(2,9);
+                        const name = pUser?.fullName || pUser?.username || 'Unknown User';
+                        const email = pUser?.email || '';
+                        const avatarSrc = pUser?.avatar || undefined;
+                        const isOnline = !!pUser?.isOnline;
+
+                        return (
+                          <div key={keyId} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
+                            <div className="relative">
+                              <Avatar className="h-10 w-10">
+                                <AvatarImage src={avatarSrc} />
+                                <AvatarFallback>{getInitials(name)}</AvatarFallback>
+                              </Avatar>
+                              {isOnline && (
+                                <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background bg-green-500" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm">{name}</div>
+                              <div className="text-xs text-muted-foreground">{email}</div>
+                            </div>
+                            {participant.role === 'admin' && (
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded font-medium">Admin</span>
                             )}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm">{participant.user.fullName}</div>
-                            <div className="text-xs text-muted-foreground">{participant.user.email}</div>
-                          </div>
-                          {participant.role === 'admin' && (
-                            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded font-medium">Admin</span>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </ScrollArea>
                 </div>
