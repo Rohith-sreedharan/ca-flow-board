@@ -224,6 +224,25 @@ export const RecurringTaskAutomation = () => {
 
   return (
     <div className="space-y-6">
+      {/* Info Banner */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <Settings className="h-5 w-5 text-blue-600 mt-0.5" />
+          <div>
+            <h4 className="font-medium text-blue-900">How Automation Works</h4>
+            <p className="text-sm text-blue-700 mt-1">
+              When enabled, the system automatically generates recurring tasks every day at your specified time. 
+              No technical knowledge required - just enable it, set your preferred time, and the system handles the rest!
+            </p>
+            <ul className="text-sm text-blue-700 mt-2 space-y-1 list-disc list-inside">
+              <li>Tasks are created from your active recurring templates</li>
+              <li>The system checks for due dates and generates tasks automatically</li>
+              <li>You can also generate tasks manually using the button below</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
       {/* Automation Controls */}
       <Card>
         <CardHeader>
@@ -240,7 +259,7 @@ export const RecurringTaskAutomation = () => {
             <div>
               <Label className="font-medium">Enable Automatic Generation</Label>
               <p className="text-sm text-muted-foreground">
-                Automatically generate recurring tasks based on templates
+                Automatically generate recurring tasks daily at the specified time
               </p>
             </div>
             <Switch

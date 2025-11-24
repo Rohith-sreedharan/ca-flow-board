@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Task } from '@/store/slices/tasksSlice';
 import { useEmployees } from '@/hooks/useEmployees';
 import { useClients } from '@/hooks/useClients';
+import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -57,8 +58,12 @@ export default function TaskDetailModal({ task, open, onOpenChange }: TaskDetail
   const [activeTab, setActiveTab] = useState('overview');
   const { employees } = useEmployees();
   const { clients } = useClients();
+  const { user } = useAuth();
 
   if (!task) return null;
+
+  // Check if user is owner or admin (not employee)
+  const canAccessInvoicing = user?.role === 'owner' || user?.role === 'admin' || user?.role === 'superadmin';
 
   // Get real client and employee data
   const client = clients?.find(c => c.id === task.clientId);
@@ -159,7 +164,10 @@ export default function TaskDetailModal({ task, open, onOpenChange }: TaskDetail
         {/* Content */}
         <div className="flex-1 overflow-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-4 bg-gray-50 m-0 rounded-none">
+            <TabsList className={cn(
+              "w-full bg-gray-50 m-0 rounded-none",
+              canAccessInvoicing ? "grid grid-cols-4" : "grid grid-cols-3"
+            )}>
               <TabsTrigger value="overview" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
                 Overview
@@ -172,10 +180,12 @@ export default function TaskDetailModal({ task, open, onOpenChange }: TaskDetail
                 <MessageSquare className="h-4 w-4" />
                 Chat
               </TabsTrigger>
-              <TabsTrigger value="invoicing" className="flex items-center gap-2">
-                <Receipt className="h-4 w-4" />
-                Invoicing
-              </TabsTrigger>
+              {canAccessInvoicing && (
+                <TabsTrigger value="invoicing" className="flex items-center gap-2">
+                  <Receipt className="h-4 w-4" />
+                  Invoicing
+                </TabsTrigger>
+              )}
             </TabsList>
 
             <div className="flex-1 overflow-auto">
@@ -196,9 +206,11 @@ export default function TaskDetailModal({ task, open, onOpenChange }: TaskDetail
                 <TaskChat task={task} />
               </TabsContent>
               
-              <TabsContent value="invoicing" className="h-full m-0">
-                <TaskInvoicing task={task} client={client} />
-              </TabsContent>
+              {canAccessInvoicing && (
+                <TabsContent value="invoicing" className="h-full m-0">
+                  <TaskInvoicing task={task} client={client} />
+                </TabsContent>
+              )}
             </div>
           </Tabs>
         </div>

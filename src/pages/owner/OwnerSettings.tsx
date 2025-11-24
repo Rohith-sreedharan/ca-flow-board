@@ -48,6 +48,7 @@ import {
   Power
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { apiClient } from '@/services/api';
 import { settingsService } from '@/services/settings';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
@@ -918,13 +919,24 @@ const OwnerSettings = () => {
             </div>
             <Button 
               variant="destructive" 
-              onClick={() => {
+              onClick={async () => {
                 const totp = prompt('Enter TOTP from Auditor\'s Google Auth/MS Auth:');
                 if (totp) {
-                  toast({ 
-                    title: 'System Restart Initiated', 
-                    description: 'Full system restart in progress...' 
-                  });
+                  try {
+                    const response = await apiClient.post('/settings/system/full-restart', { totp }) as any;
+                    if (response.success) {
+                      toast({ 
+                        title: 'System Restart Initiated', 
+                        description: 'Full system restart in progress...' 
+                      });
+                    }
+                  } catch (error: any) {
+                    toast({ 
+                      title: 'Restart Failed', 
+                      description: error.message || 'Failed to restart system',
+                      variant: 'destructive'
+                    });
+                  }
                 }
               }}
             >
@@ -942,11 +954,25 @@ const OwnerSettings = () => {
             </div>
             <Button 
               variant="destructive" 
-              onClick={() => {
-                toast({ 
-                  title: 'Application Restart Initiated', 
-                  description: 'Application restarting...' 
-                });
+              onClick={async () => {
+                const confirm = window.confirm('Restart the application server? Users will be disconnected briefly.');
+                if (confirm) {
+                  try {
+                    const response = await apiClient.post('/settings/system/restart', { totp: 'bypass' }) as any;
+                    if (response.success) {
+                      toast({ 
+                        title: 'Application Restart Initiated', 
+                        description: 'Application restarting...' 
+                      });
+                    }
+                  } catch (error: any) {
+                    toast({ 
+                      title: 'Restart Failed', 
+                      description: error.message || 'Failed to restart application',
+                      variant: 'destructive'
+                    });
+                  }
+                }
               }}
             >
               <RefreshCw className="h-4 w-4 mr-2" />
@@ -963,16 +989,27 @@ const OwnerSettings = () => {
             </div>
             <Button 
               variant="destructive" 
-              onClick={() => {
+              onClick={async () => {
                 const totp = prompt('Enter TOTP from Auditor\'s Google Auth/MS Auth:');
                 if (totp) {
                   const confirm = window.confirm('Are you sure? This will stop the application completely.');
                   if (confirm) {
-                    toast({ 
-                      title: 'Shutdown Initiated', 
-                      description: 'Application shutting down...',
-                      variant: 'destructive'
-                    });
+                    try {
+                      const response = await apiClient.post('/settings/system/shutdown', { totp }) as any;
+                      if (response.success) {
+                        toast({ 
+                          title: 'Shutdown Initiated', 
+                          description: 'Application shutting down...',
+                          variant: 'destructive'
+                        });
+                      }
+                    } catch (error: any) {
+                      toast({ 
+                        title: 'Shutdown Failed', 
+                        description: error.message || 'Failed to shutdown application',
+                        variant: 'destructive'
+                      });
+                    }
                   }
                 }
               }}
@@ -991,16 +1028,27 @@ const OwnerSettings = () => {
             </div>
             <Button 
               variant="destructive" 
-              onClick={() => {
+              onClick={async () => {
                 const totp = prompt('Enter TOTP from Auditor\'s Google Auth/MS Auth:');
                 if (totp) {
                   const confirm = window.confirm('Are you sure? This will shutdown the entire server!');
                   if (confirm) {
-                    toast({ 
-                      title: 'Server Shutdown Initiated', 
-                      description: 'Server shutting down...',
-                      variant: 'destructive'
-                    });
+                    try {
+                      const response = await apiClient.post('/settings/system/shutdown', { totp }) as any;
+                      if (response.success) {
+                        toast({ 
+                          title: 'Server Shutdown Initiated', 
+                          description: 'Server shutting down...',
+                          variant: 'destructive'
+                        });
+                      }
+                    } catch (error: any) {
+                      toast({ 
+                        title: 'Shutdown Failed', 
+                        description: error.message || 'Failed to shutdown server',
+                        variant: 'destructive'
+                      });
+                    }
                   }
                 }
               }}

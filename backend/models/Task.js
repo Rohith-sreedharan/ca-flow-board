@@ -176,10 +176,6 @@ const taskSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  invoice: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Invoice'
-  },
   // Notifications
   reminderSent: {
     type: Boolean,

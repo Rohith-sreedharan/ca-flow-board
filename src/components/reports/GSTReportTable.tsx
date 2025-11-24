@@ -62,6 +62,7 @@ interface GSTReportTableProps {
   error: Error | null;
   onRowClick: (row: GSTReportRow) => void;
   onExportCSV: () => void;
+  onFetchAllData?: () => Promise<GSTReportRow[]>;
   page: number;
   pageSize: number;
   totalPages: number;
@@ -87,6 +88,7 @@ export const GSTReportTable = ({
   error,
   onRowClick,
   onExportCSV,
+  onFetchAllData,
   page,
   pageSize,
   totalPages,
@@ -411,7 +413,7 @@ export const GSTReportTable = ({
                 {selectedIds.length > 0 ? (
                   <span>{selectedIds.length} row(s) selected. Export will include only selected rows.</span>
                 ) : (
-                  <span>No rows selected. Export will include all rows on the current page.</span>
+                  <span>No rows selected. Export will include <strong>all matching records</strong> from the entire report (not just current page).</span>
                 )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -422,7 +424,15 @@ export const GSTReportTable = ({
                   // Lazy import xlsx when needed
                   (async () => {
                     const XLSX = await import('xlsx');
-                    const source = selectedIds.length > 0 ? data.filter(d => selectedIds.includes(d.id)) : data;
+                    let source;
+                    if (selectedIds.length > 0) {
+                      source = data.filter(d => selectedIds.includes(d.id));
+                    } else if (onFetchAllData) {
+                      // Fetch all data for export
+                      source = await onFetchAllData();
+                    } else {
+                      source = data;
+                    }
                     const rows = (source || []).map((row) => ({
                       Month: row.monthName,
                       Client: row.clientName,
@@ -448,7 +458,15 @@ export const GSTReportTable = ({
                   (async () => {
                     const jsPDF = (await import('jspdf')).default;
                     const autoTable = (await import('jspdf-autotable')).default;
-                    const source = selectedIds.length > 0 ? data.filter(d => selectedIds.includes(d.id)) : data;
+                    let source;
+                    if (selectedIds.length > 0) {
+                      source = data.filter(d => selectedIds.includes(d.id));
+                    } else if (onFetchAllData) {
+                      // Fetch all data for export
+                      source = await onFetchAllData();
+                    } else {
+                      source = data;
+                    }
                     const doc = new jsPDF({ orientation: 'landscape' });
                     const head = [['S.No','Month','Client','GSTIN','GSTR1','GSTR3B','GSTR9','Total']];
                     const body = (source || []).map((row, i) => [

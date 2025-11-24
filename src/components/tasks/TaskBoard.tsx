@@ -15,11 +15,7 @@ import {
   WifiOff, 
   RefreshCw, 
   Download, 
-  SortAsc, 
-  SortDesc,
-  Eye,
-  Plus,
-  Settings
+  Plus
 } from 'lucide-react';
 import { RootState } from '@/store';
 import { Task, TaskStatus } from '@/store/slices/tasksSlice';
@@ -49,6 +45,9 @@ import TaskFilters from './TaskFilters';
 import { useTasks } from '@/hooks/useTasks';
 import { useTaskWebSocket } from '@/hooks/useTaskWebSocket';
 import { useEmployees } from '@/hooks/useEmployees';
+import { useAuth } from '@/hooks/useAuth';
+import { AddTaskForm } from '@/components/forms/AddTaskForm';
+import TaskDetailModal from './TaskDetailModal';
 import { toast } from 'sonner';
 import Swal from 'sweetalert2';
 
@@ -66,13 +65,15 @@ const TaskBoard = ({ tasks, basePath }: TaskBoardProps) => {
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>('created');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [showViewDialog, setShowViewDialog] = useState(false);
-  const [newViewName, setNewViewName] = useState('');
-  const [savedViews, setSavedViews] = useState<Array<{id: string, name: string, filters: any, sort: any}>>([]);
+  const [showCreateTask, setShowCreateTask] = useState(false);
   
   // Bulk selection state
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   const [isSelectAllChecked, setIsSelectAllChecked] = useState(false);
+  
+  // Task detail modal state
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   
   const { 
     updateTaskStatus, 
@@ -90,6 +91,11 @@ const TaskBoard = ({ tasks, basePath }: TaskBoardProps) => {
     refreshTasks
   } = useTasks();
   const { employees } = useEmployees();
+  const { user } = useAuth();
+  
+  // Check user role
+  const isEmployee = user?.role === 'employee';
+  const isOwnerOrAdmin = user?.role === 'owner' || user?.role === 'admin' || user?.role === 'superadmin';
   
   // Initialize WebSocket connection for real-time updates
   const { isConnected: wsConnected } = useTaskWebSocket(isRealTime);
@@ -142,32 +148,7 @@ const TaskBoard = ({ tasks, basePath }: TaskBoardProps) => {
     toast.success('Tasks exported successfully!');
   };
 
-  // View management
-  const saveCurrentView = () => {
-    if (!newViewName.trim()) {
-      toast.error('Please enter a view name');
-      return;
-    }
-    
-    const newView = {
-      id: Date.now().toString(),
-      name: newViewName,
-      filters: activeFilters,
-      sort: { sortBy, sortDirection }
-    };
-    
-    setSavedViews(prev => [...prev, newView]);
-    setNewViewName('');
-    setShowViewDialog(false);
-    toast.success(`View "${newViewName}" saved successfully!`);
-  };
 
-  const loadView = (view: any) => {
-    // Here you would dispatch actions to update filters and sorting
-    setSortBy(view.sort.sortBy);
-    setSortDirection(view.sort.sortDirection);
-    toast.success(`View "${view.name}" loaded successfully!`);
-  };
 
   // Sorting function
   const sortTasks = (tasksToSort: Task[]) => {
@@ -410,144 +391,55 @@ const TaskBoard = ({ tasks, basePath }: TaskBoardProps) => {
         </div>
         
         <div className="flex gap-2">
-          {/* Manual Refresh Button */}
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={refreshTasks}
-            disabled={isLoading}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          {/* Export Options - Only for admin/owner */}
+          {isOwnerOrAdmin && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuLabel>Export Tasks</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={exportToCSV}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={exportToJSON}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export as JSON
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
-          {/* Export Options */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuLabel>Export Tasks</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={exportToCSV}>
-                <Download className="h-4 w-4 mr-2" />
-                Export as CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={exportToJSON}>
-                <Download className="h-4 w-4 mr-2" />
-                Export as JSON
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Create Task Button - Only for employees (replaces Views) */}
+          {isEmployee && (
+            <Dialog open={showCreateTask} onOpenChange={setShowCreateTask}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Task
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Create New Task</DialogTitle>
+                </DialogHeader>
+                <AddTaskForm onSuccess={() => setShowCreateTask(false)} />
+              </DialogContent>
+            </Dialog>
+          )}
 
-          {/* Sorting Options */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                {sortDirection === 'asc' ? (
-                  <SortAsc className="h-4 w-4 mr-2" />
-                ) : (
-                  <SortDesc className="h-4 w-4 mr-2" />
-                )}
-                Sort
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuLabel>Sort By</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => {
-                setSortBy('priority');
-                setSortDirection(sortBy === 'priority' && sortDirection === 'desc' ? 'asc' : 'desc');
-              }}>
-                Priority {sortBy === 'priority' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                setSortBy('dueDate');
-                setSortDirection(sortBy === 'dueDate' && sortDirection === 'desc' ? 'asc' : 'desc');
-              }}>
-                Due Date {sortBy === 'dueDate' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                setSortBy('created');
-                setSortDirection(sortBy === 'created' && sortDirection === 'desc' ? 'asc' : 'desc');
-              }}>
-                Created Date {sortBy === 'created' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                setSortBy('title');
-                setSortDirection(sortBy === 'title' && sortDirection === 'desc' ? 'asc' : 'desc');
-              }}>
-                Title {sortBy === 'title' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Saved Views */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Eye className="h-4 w-4 mr-2" />
-                Views
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuLabel>Saved Views</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {savedViews.length === 0 ? (
-                <DropdownMenuItem disabled>No saved views</DropdownMenuItem>
-              ) : (
-                savedViews.map(view => (
-                  <DropdownMenuItem key={view.id} onClick={() => loadView(view)}>
-                    <Eye className="h-4 w-4 mr-2" />
-                    {view.name}
-                  </DropdownMenuItem>
-                ))
-              )}
-              <DropdownMenuSeparator />
-              <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-                <DialogTrigger asChild>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Save Current View
-                  </DropdownMenuItem>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Save Current View</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="viewName">View Name</Label>
-                      <Input
-                        id="viewName"
-                        placeholder="Enter view name"
-                        value={newViewName}
-                        onChange={(e) => setNewViewName(e.target.value)}
-                      />
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" onClick={() => setShowViewDialog(false)}>
-                        Cancel
-                      </Button>
-                      <Button onClick={saveCurrentView}>
-                        Save View
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Real-time Toggle */}
+          {/* Real-time Toggle - Keep this as it uses polling */}
           <Button
             variant="outline"
             size="sm"
             onClick={() => setIsRealTime(!isRealTime)}
             className={isRealTime ? 'border-green-300 text-green-700' : 'border-gray-300'}
+            title={isRealTime ? 'Real-time updates active (polling every 10s)' : 'Real-time updates disabled'}
           >
             {isRealTime ? (
               <>
@@ -599,7 +491,16 @@ const TaskBoard = ({ tasks, basePath }: TaskBoardProps) => {
         </div>
       </div>
       
-      {showFilters && <TaskFilters />}
+      {showFilters && (
+        <TaskFilters 
+          sortBy={sortBy} 
+          sortDirection={sortDirection} 
+          onSortChange={(newSortBy, newSortDirection) => {
+            setSortBy(newSortBy as SortOption);
+            setSortDirection(newSortDirection);
+          }} 
+        />
+      )}
       
       {boardView === 'kanban' ? (
         <DndProvider backend={HTML5Backend}>
@@ -755,12 +656,20 @@ const TaskBoard = ({ tasks, basePath }: TaskBoardProps) => {
                 </div>
               ) : (
                 sortedAndFilteredTasks.map((task) => (
-                  <div key={task.id} className="p-4 hover:bg-gray-50 transition-colors">
+                  <div 
+                    key={task.id} 
+                    className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => {
+                      setSelectedTask(task);
+                      setShowDetailModal(true);
+                    }}
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <Checkbox 
                           checked={selectedTasks.includes(task.id)}
                           onCheckedChange={(checked) => handleSelectTask(task.id, checked as boolean)}
+                          onClick={(e) => e.stopPropagation()}
                         />
                         <div>
                           <h4 className="font-medium text-gray-900">{task.title}</h4>
@@ -787,6 +696,16 @@ const TaskBoard = ({ tasks, basePath }: TaskBoardProps) => {
             </div>
           </div>
         </div>
+      )}
+      
+      {/* Task Detail Modal */}
+      {selectedTask && (
+        <TaskDetailModal
+          task={selectedTask}
+          open={showDetailModal}
+          onOpenChange={setShowDetailModal}
+          basePath={basePath}
+        />
       )}
     </div>
   );

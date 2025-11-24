@@ -91,6 +91,42 @@ const GSTReportAnnual = () => {
     }
   };
 
+  const fetchAllData = async (): Promise<GSTReportRow[]> => {
+    try {
+      const params: any = {
+        reportType: 'annual',
+        year: selectedYear,
+        sortBy,
+        sortOrder,
+        exportAll: true,
+      };
+
+      if (filterGstStatus && filterGstStatus !== 'all') {
+        params.filterGstStatus = filterGstStatus;
+      }
+
+      if (filterClient) {
+        params.filterClient = filterClient;
+      }
+
+      if (filterReturnType && filterReturnType !== 'all') params.filterReturnType = filterReturnType;
+      if (filterReturnStatus && filterReturnStatus !== 'all') params.filterReturnStatus = filterReturnStatus;
+
+      const response = await apiClient.get('/reports/gst', params) as any;
+
+      if (response.success) {
+        return response.data.items;
+      } else {
+        throw new Error(response.message || 'Failed to fetch complete data');
+      }
+    } catch (err: any) {
+      toast.error('Failed to fetch complete data', {
+        description: err.message || 'An error occurred while fetching data',
+      });
+      return [];
+    }
+  };
+
   useEffect(() => {
     fetchReport();
   }, [selectedYear, page, sortBy, sortOrder, filterGstStatus, filterClient, filterReturnType, filterReturnStatus]);
@@ -208,6 +244,7 @@ const GSTReportAnnual = () => {
             error={error}
             onRowClick={handleRowClick}
             onExportCSV={handleExportCSV}
+            onFetchAllData={fetchAllData}
             page={page}
             pageSize={pageSize}
             totalPages={totalPages}

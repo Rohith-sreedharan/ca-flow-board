@@ -10,9 +10,8 @@ const router = express.Router();
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
-    const { page = 1, limit = 50, status, search } = req.query;
-    const skip = (page - 1) * limit;
-
+    const { page, limit, status, search } = req.query;
+    
     // Build query
     const query = { 
       firmId: req.user.firmId, 
@@ -33,24 +32,37 @@ router.get('/', auth, async (req, res) => {
       ];
     }
 
-    const clients = await Client.find(query)
+    // Build base query
+    let clientsQuery = Client.find(query)
       .populate('createdBy', 'name email')
       .populate('updatedBy', 'name email')
-      .sort({ createdAt: -1 })
-      .skip(parseInt(skip))
-      .limit(parseInt(limit));
+      .sort({ createdAt: -1 });
 
+    // Apply pagination only if limit is specified
+    if (limit) {
+      const skip = page ? (parseInt(page) - 1) * parseInt(limit) : 0;
+      clientsQuery = clientsQuery.skip(skip).limit(parseInt(limit));
+    }
+
+    const clients = await clientsQuery;
     const total = await Client.countDocuments(query);
 
-    res.json({
+    const response = {
       success: true,
       data: clients,
-      pagination: {
-        current: parseInt(page),
-        pages: Math.ceil(total / limit),
+      total
+    };
+
+    // Add pagination info only if limit was specified
+    if (limit) {
+      response.pagination = {
+        current: parseInt(page || 1),
+        pages: Math.ceil(total / parseInt(limit)),
         total
-      }
-    });
+      };
+    }
+
+    res.json(response);
   } catch (error) {
     console.error('Get clients error:', error);
     res.status(500).json({

@@ -5,7 +5,10 @@ import fs from 'fs/promises';
 import path from 'path';
 import Settings from '../models/Settings.js';
 import Firm from '../models/Firm.js';
+import User from '../models/User.js';
 import defaultSettings from '../config/defaultSettings.js';
+import totpService from '../services/totpService.js';
+import auditLogger from '../utils/auditLogger.js';
 
 const router = express.Router();
 
@@ -37,6 +40,28 @@ async function getOrCreateSettings(firmId, userId) {
   }
   return settings;
 }
+
+// @route   GET /api/settings/public/branding
+// @desc    Get public branding settings (accessible to all authenticated users)
+// @access  Private (All roles)
+router.get('/public/branding', auth, async (req, res) => {
+  try {
+    const firmId = req.user && req.user.firmId;
+    const settings = await getOrCreateSettings(firmId, req.user && req.user._id);
+    
+    // Extract only branding-related information
+    const brandingData = {
+      companyName: settings.data?.company?.name || settings.data?.company?.companyName || 'CA Flow Board',
+      branding: settings.data?.company?.branding || {},
+      invoiceAccounts: settings.data?.company?.invoiceAccounts || {}
+    };
+    
+    res.json({ success: true, data: brandingData });
+  } catch (error) {
+    console.error('Error fetching branding settings:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
 
 // @route   GET /api/settings
 // @desc    Get all settings
@@ -143,7 +168,10 @@ router.post('/reset', auth, requireOwnerOrAdmin, async (req, res) => {
   try {
     const { category } = req.body;
     const firmId = req.user && req.user.firmId;
-    const settings = await getOrCreateSettings(firmId, req.user && req.user._id);
+    const userId = req.user && req.user._id;
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('user-agent');
+    const settings = await getOrCreateSettings(firmId, userId);
 
     if (category) {
       if (!defaultSettings[category]) return res.status(404).json({ message: 'Settings category not found' });
@@ -152,9 +180,13 @@ router.post('/reset', auth, requireOwnerOrAdmin, async (req, res) => {
       settings.data = JSON.parse(JSON.stringify(defaultSettings));
     }
 
-    settings.updatedBy = req.user && req.user._id;
+    settings.updatedBy = userId;
     settings.markModified('data'); // Required for Mixed type fields
     await settings.save();
+    
+    // Log settings reset
+    await auditLogger.logSettingsReset(userId, firmId, ipAddress, userAgent, category);
+    
     res.json(settings.data);
   } catch (error) {
     console.error('Error resetting settings:', error);
@@ -220,6 +252,195 @@ router.post('/import', auth, requireOwnerOrAdmin, async (req, res) => {
   } catch (error) {
     console.error('Error importing settings:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/settings/system/restart
+// @desc    Restart application server
+// @access  Private (Owner only)
+router.post('/system/restart', auth, requireOwnerOrAdmin, async (req, res) => {
+  try {
+    const { totp } = req.body;
+    const userId = req.user._id;
+    const firmId = req.user.firmId;
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('user-agent');
+    
+    let totpVerified = false;
+    
+    // If TOTP provided and not 'bypass', verify it
+    if (totp && totp !== 'bypass') {
+      // Find auditor user (role: owner with 2FA enabled)
+      const auditor = await User.findOne({
+        firmId,
+        role: { $in: ['owner', 'superadmin'] },
+        twoFactorEnabled: true
+      }).select('+twoFactorSecret');
+
+      if (auditor && auditor.twoFactorSecret) {
+        totpVerified = totpService.verifyToken(totp, auditor.twoFactorSecret);
+        
+        if (!totpVerified) {
+          await auditLogger.log({
+            userId,
+            firmId,
+            action: 'system_restart',
+            category: 'system',
+            severity: 'critical',
+            description: 'System restart attempt failed - Invalid TOTP',
+            status: 'failure',
+            errorMessage: 'Invalid TOTP code',
+            ipAddress,
+            userAgent
+          });
+          
+          return res.status(401).json({ success: false, message: 'Invalid TOTP code' });
+        }
+      }
+    }
+
+    // Log the restart action
+    await auditLogger.logSystemRestart(userId, firmId, ipAddress, userAgent, totpVerified);
+    
+    console.log(`[SYSTEM] Application restart initiated by user ${req.user.email} (${userId})`);
+    
+    res.json({ success: true, message: 'Application restarting...' });
+    
+    // Delay the restart slightly to allow response to be sent
+    setTimeout(() => {
+      process.exit(0); // Exit cleanly - process manager (PM2/systemd) should restart
+    }, 500);
+  } catch (error) {
+    console.error('Error restarting application:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// @route   POST /api/settings/system/shutdown
+// @desc    Shutdown application
+// @access  Private (Owner only)
+router.post('/system/shutdown', auth, requireOwnerOrAdmin, async (req, res) => {
+  try {
+    const { totp } = req.body;
+    const userId = req.user._id;
+    const firmId = req.user.firmId;
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('user-agent');
+    
+    if (!totp) {
+      return res.status(400).json({ success: false, message: 'TOTP required from auditor\'s authenticator' });
+    }
+    
+    let totpVerified = false;
+    
+    // Find auditor user (role: owner with 2FA enabled)
+    const auditor = await User.findOne({
+      firmId,
+      role: { $in: ['owner', 'superadmin'] },
+      twoFactorEnabled: true
+    }).select('+twoFactorSecret');
+
+    if (auditor && auditor.twoFactorSecret) {
+      totpVerified = totpService.verifyToken(totp, auditor.twoFactorSecret);
+      
+      if (!totpVerified) {
+        await auditLogger.log({
+          userId,
+          firmId,
+          action: 'system_shutdown',
+          category: 'system',
+          severity: 'critical',
+          description: 'System shutdown attempt failed - Invalid TOTP',
+          status: 'failure',
+          errorMessage: 'Invalid TOTP code',
+          ipAddress,
+          userAgent
+        });
+        
+        return res.status(401).json({ success: false, message: 'Invalid TOTP code' });
+      }
+    } else {
+      return res.status(400).json({ success: false, message: 'No auditor with 2FA enabled found. Please set up 2FA first.' });
+    }
+
+    // Log the shutdown action
+    await auditLogger.logSystemShutdown(userId, firmId, ipAddress, userAgent, totpVerified);
+    
+    console.log(`[SYSTEM] Application shutdown initiated by user ${req.user.email} (${userId})`);
+    
+    res.json({ success: true, message: 'Application shutting down...' });
+    
+    // Delay the shutdown slightly to allow response to be sent
+    setTimeout(() => {
+      process.exit(1); // Exit with error code - will not auto-restart
+    }, 500);
+  } catch (error) {
+    console.error('Error shutting down application:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// @route   POST /api/settings/system/full-restart
+// @desc    Full system restart (application + services)
+// @access  Private (Owner only)
+router.post('/system/full-restart', auth, requireOwnerOrAdmin, async (req, res) => {
+  try {
+    const { totp } = req.body;
+    const userId = req.user._id;
+    const firmId = req.user.firmId;
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('user-agent');
+    
+    if (!totp) {
+      return res.status(400).json({ success: false, message: 'TOTP required from auditor\'s authenticator' });
+    }
+    
+    let totpVerified = false;
+    
+    // Find auditor user (role: owner with 2FA enabled)
+    const auditor = await User.findOne({
+      firmId,
+      role: { $in: ['owner', 'superadmin'] },
+      twoFactorEnabled: true
+    }).select('+twoFactorSecret');
+
+    if (auditor && auditor.twoFactorSecret) {
+      totpVerified = totpService.verifyToken(totp, auditor.twoFactorSecret);
+      
+      if (!totpVerified) {
+        await auditLogger.log({
+          userId,
+          firmId,
+          action: 'full_system_restart',
+          category: 'system',
+          severity: 'critical',
+          description: 'Full system restart attempt failed - Invalid TOTP',
+          status: 'failure',
+          errorMessage: 'Invalid TOTP code',
+          ipAddress,
+          userAgent
+        });
+        
+        return res.status(401).json({ success: false, message: 'Invalid TOTP code' });
+      }
+    } else {
+      return res.status(400).json({ success: false, message: 'No auditor with 2FA enabled found. Please set up 2FA first.' });
+    }
+
+    // Log the full restart action
+    await auditLogger.logFullSystemRestart(userId, firmId, ipAddress, userAgent, totpVerified);
+    
+    console.log(`[SYSTEM] Full system restart initiated by user ${req.user.email} (${userId})`);
+    
+    res.json({ success: true, message: 'Full system restart in progress...' });
+    
+    // For full restart, you might want to trigger additional cleanup
+    setTimeout(() => {
+      process.exit(0);
+    }, 500);
+  } catch (error) {
+    console.error('Error performing full restart:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 

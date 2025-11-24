@@ -119,6 +119,43 @@ const GSTReportMonthly = () => {
     setModalOpen(true);
   };
 
+  const fetchAllData = async () => {
+    try {
+      const params: any = {
+        reportType: 'monthly',
+        year: selectedYear,
+        month: selectedMonth,
+        sortBy,
+        sortOrder,
+        exportAll: true, // Fetch all data without pagination
+      };
+
+      if (filterGstStatus && filterGstStatus !== 'all') {
+        params.filterGstStatus = filterGstStatus;
+      }
+
+      if (filterClient) {
+        params.filterClient = filterClient;
+      }
+
+      if (filterReturnType && filterReturnType !== 'all') params.filterReturnType = filterReturnType;
+      if (filterReturnStatus && filterReturnStatus !== 'all') params.filterReturnStatus = filterReturnStatus;
+
+      const response = await apiClient.get('/reports/gst', params) as any;
+
+      if (response.success) {
+        return response.data.items;
+      } else {
+        throw new Error(response.message || 'Failed to fetch full report');
+      }
+    } catch (err: any) {
+      toast.error('Failed to fetch full report data', {
+        description: err.message || 'An error occurred',
+      });
+      return [];
+    }
+  };
+
   const handleExportCSV = () => {
     if (!data || data.length === 0) {
       toast.error('No data to export');
@@ -239,6 +276,7 @@ const GSTReportMonthly = () => {
             error={error}
             onRowClick={handleRowClick}
             onExportCSV={handleExportCSV}
+            onFetchAllData={fetchAllData}
             page={page}
             pageSize={pageSize}
             totalPages={totalPages}

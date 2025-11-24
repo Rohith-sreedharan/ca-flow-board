@@ -210,30 +210,73 @@ recurrencePatternSchema.virtual('frequencyDescription').get(function() {
 
 // Method to generate next occurrence date
 recurrencePatternSchema.methods.getNextOccurrence = function(fromDate = new Date()) {
-  // Implementation for calculating next occurrence based on pattern
-  // This would be a complex algorithm based on the configuration
-  // For now, return a placeholder
   const nextDate = new Date(fromDate);
+  
+  // If pattern has already ended, return null
+  if (this.endDate && nextDate > this.endDate) {
+    return null;
+  }
   
   switch (this.type) {
     case 'monthly':
       if (this.monthlyConfig.frequency) {
         nextDate.setMonth(nextDate.getMonth() + this.monthlyConfig.frequency);
+        
+        // Set specific day of month if specified
+        if (this.monthlyConfig.dayOfMonth) {
+          nextDate.setDate(this.monthlyConfig.dayOfMonth);
+        }
       }
       break;
+      
     case 'yearly':
       if (this.yearlyConfig.frequency) {
         nextDate.setFullYear(nextDate.getFullYear() + this.yearlyConfig.frequency);
+        
+        // Set specific month and day if specified
+        if (this.yearlyConfig.month !== undefined) {
+          nextDate.setMonth(this.yearlyConfig.month - 1); // months are 0-indexed
+        }
+        if (this.yearlyConfig.dayOfMonth) {
+          nextDate.setDate(this.yearlyConfig.dayOfMonth);
+        }
       }
       break;
+      
     case 'quarterly':
       if (this.quarterlyConfig.frequency) {
         nextDate.setMonth(nextDate.getMonth() + (this.quarterlyConfig.frequency * 3));
+        
+        // Set specific day of month if specified
+        if (this.quarterlyConfig.dayOfMonth) {
+          nextDate.setDate(this.quarterlyConfig.dayOfMonth);
+        }
       }
       break;
+      
     case 'custom':
-      // Custom logic based on unit and frequency
+      if (this.customConfig.frequency && this.customConfig.unit) {
+        switch (this.customConfig.unit) {
+          case 'days':
+            nextDate.setDate(nextDate.getDate() + this.customConfig.frequency);
+            break;
+          case 'weeks':
+            nextDate.setDate(nextDate.getDate() + (this.customConfig.frequency * 7));
+            break;
+          case 'months':
+            nextDate.setMonth(nextDate.getMonth() + this.customConfig.frequency);
+            break;
+          case 'years':
+            nextDate.setFullYear(nextDate.getFullYear() + this.customConfig.frequency);
+            break;
+        }
+      }
       break;
+  }
+  
+  // Respect end date if set
+  if (this.endDate && nextDate > this.endDate) {
+    return null;
   }
   
   return nextDate;

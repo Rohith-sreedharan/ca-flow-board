@@ -21,7 +21,13 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 
-const TaskFilters = () => {
+interface TaskFiltersProps {
+  sortBy: string;
+  sortDirection: 'asc' | 'desc';
+  onSortChange: (sortBy: string, sortDirection: 'asc' | 'desc') => void;
+}
+
+const TaskFilters = ({ sortBy, sortDirection, onSortChange }: TaskFiltersProps) => {
   const dispatch = useDispatch();
   const { activeFilters } = useSelector((state: RootState) => state.ui);
 
@@ -103,13 +109,19 @@ const TaskFilters = () => {
     }
   };
 
+  const handleSortChange = (field: string) => {
+    // Toggle direction if same field, otherwise default to desc
+    const newDirection = sortBy === field && sortDirection === 'desc' ? 'asc' : 'desc';
+    onSortChange(field, newDirection);
+  };
+
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Filter Tasks</CardTitle>
+        <CardTitle className="text-lg">Filter & Sort Tasks</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
           <div>
             <Label className="mb-2 block font-medium">Status</Label>
             <div className="space-y-2">
@@ -199,6 +211,37 @@ const TaskFilters = () => {
                 </SelectGroup>
               </SelectContent>
             </Select>
+          </div>
+          
+          <div>
+            <Label className="mb-2 block font-medium">Sort By</Label>
+            <Select 
+              value={sortBy}
+              onValueChange={handleSortChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sort by..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="priority">
+                    Priority {sortBy === 'priority' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </SelectItem>
+                  <SelectItem value="dueDate">
+                    Due Date {sortBy === 'dueDate' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </SelectItem>
+                  <SelectItem value="created">
+                    Created Date {sortBy === 'created' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </SelectItem>
+                  <SelectItem value="title">
+                    Title {sortBy === 'title' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <div className="text-xs text-gray-500 mt-1">
+              Direction: {sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+            </div>
           </div>
         </div>
       </CardContent>

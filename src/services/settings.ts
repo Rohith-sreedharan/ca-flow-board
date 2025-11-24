@@ -129,6 +129,20 @@ export interface AllSettings {
 }
 
 class SettingsService {
+  /**
+   * Get public branding settings (accessible to all roles)
+   */
+  async getBrandingSettings(): Promise<any> {
+    try {
+      const response = await api.get('/settings/public/branding') as any;
+      console.log('📡 API response - getBrandingSettings:', response);
+      return response?.data || response;
+    } catch (error) {
+      console.error('Failed to fetch branding settings:', error);
+      throw error;
+    }
+  }
+
   // Get all settings
   async getAllSettings(): Promise<AllSettings> {
     try {

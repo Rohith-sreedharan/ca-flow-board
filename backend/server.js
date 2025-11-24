@@ -46,11 +46,13 @@ import recycleBinRoutes from './routes/recycleBin.js';
 import reportsRoutes from './routes/reports.js';
 import logsRoutes from './routes/logs.js';
 import twoFactorRoutes from './routes/twoFactor.js';
+import auditLogsRoutes from './routes/auditLogs.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { notFound } from './middleware/notFound.js';
 import { seedTemplatesForAllFirms } from './seeds/index.js';
 import chatWebSocketService from './services/chatWebSocket.js';
 import taskWebSocketService from './services/taskWebSocket.js';
+import automationScheduler from './services/automationScheduler.js';
 import { createServer } from 'http';
 
 const app = express();
@@ -96,6 +98,10 @@ const initializeApp = async () => {
       const totalTemplates = await TaskTemplate.countDocuments({ is_deleted: false });
       console.log(`📊 All firms have templates. Total: ${totalTemplates} templates across ${firmCount} firms`);
     }
+    
+    // Initialize automation scheduler
+    console.log('🤖 Starting automation scheduler...');
+    await automationScheduler.initialize();
   } catch (error) {
     console.error('❌ App initialization failed:', error);
   }
@@ -226,6 +232,7 @@ app.use('/api/recycle-bin', recycleBinRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/logs', logsRoutes);
 app.use('/api/2fa', twoFactorRoutes);
+app.use('/api/audit-logs', auditLogsRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -277,6 +284,25 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`🔗 WebSocket server ready for chat connections`);
   console.log(`🔗 WebSocket server ready for task updates`);
   console.log(`🌍 Server accessible on all network interfaces (0.0.0.0)`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('📛 SIGTERM signal received: closing HTTP server and stopping schedulers');
+  automationScheduler.stopAll();
+  server.close(() => {
+    console.log('✅ HTTP server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('📛 SIGINT signal received: closing HTTP server and stopping schedulers');
+  automationScheduler.stopAll();
+  server.close(() => {
+    console.log('✅ HTTP server closed');
+    process.exit(0);
+  });
 });
 
 export default app;

@@ -5,6 +5,7 @@ import RecurrencePattern from '../models/RecurrencePattern.js';
 import Task from '../models/Task.js';
 import TaskTemplate from '../models/TaskTemplate.js';
 import Settings from '../models/Settings.js';
+import automationScheduler from '../services/automationScheduler.js';
 
 const router = express.Router();
 
@@ -44,11 +45,14 @@ router.put('/settings', auth, requireOwnerOrAdmin, async (req, res) => {
     const firmId = req.user.firmId;
     const { enabled, autoRunTime, emailNotifications, taskGeneration } = req.body;
 
-    const settings = await Settings.findOne({ firm: firmId });
+    let settings = await Settings.findOne({ firm: firmId });
     if (!settings) {
-      return res.status(404).json({
-        success: false,
-        message: 'Settings not found'
+      // Create settings if not exists
+      settings = new Settings({
+        firm: firmId,
+        data: {},
+        createdBy: req.user._id,
+        updatedBy: req.user._id
       });
     }
 
@@ -63,7 +67,12 @@ router.put('/settings', auth, requireOwnerOrAdmin, async (req, res) => {
       taskGeneration
     };
 
+    settings.updatedBy = req.user._id;
+    settings.markModified('data'); // Required for Mixed type fields
     await settings.save();
+
+    // Update the scheduler with new settings
+    await automationScheduler.updateSchedule(firmId, enabled, autoRunTime);
 
     res.json({
       success: true,
@@ -168,70 +177,16 @@ router.put('/schedules/:id/toggle', auth, requireOwnerOrAdmin, async (req, res) 
 router.post('/generate', auth, requireOwnerOrAdmin, async (req, res) => {
   try {
     const firmId = req.user.firmId;
-
-    // Get all active patterns
-    const patterns = await RecurrencePattern.find({ 
-      firm: firmId,
-      isActive: true 
-    });
-
-    // Get templates associated with these patterns
-    const templates = await TaskTemplate.find({
-      firm: firmId,
-      recurrencePattern: { $in: patterns.map(p => p._id) }
-    }).populate('client').populate('assignedTo');
-
-    let generatedCount = 0;
-    const createdTasks = [];
-
-    for (const template of templates) {
-      const nextDate = template.recurrencePattern ? 
-        await RecurrencePattern.findById(template.recurrencePattern).then(p => p?.getNextOccurrence()) :
-        null;
-
-      if (!nextDate) continue;
-
-      // Check if task for this date already exists
-      const existing = await Task.findOne({
-        template: template._id,
-        dueDate: { 
-          $gte: new Date(nextDate.setHours(0, 0, 0, 0)),
-          $lt: new Date(nextDate.setHours(23, 59, 59, 999))
-        }
-      });
-
-      if (existing) continue;
-
-      // Create new task from template
-      const task = await Task.create({
-        title: template.title,
-        description: template.description,
-        category: template.category,
-        priority: template.priority,
-        status: 'pending',
-        dueDate: nextDate,
-        client: template.client,
-        assignedTo: template.assignedTo,
-        template: template._id,
-        firm: firmId,
-        createdBy: req.user._id,
-        tags: [...(template.tags || []), 'auto-generated']
-      });
-
-      createdTasks.push(task);
-      generatedCount++;
-
-      // Update template last generated date
-      template.lastGenerated = new Date();
-      await template.save();
-    }
+    
+    // Use the scheduler service to generate tasks
+    const result = await automationScheduler.generateTasksForFirm(firmId);
 
     res.json({
       success: true,
-      message: `Generated ${generatedCount} recurring tasks`,
+      message: `Generated ${result.count} recurring tasks`,
       data: {
-        count: generatedCount,
-        tasks: createdTasks
+        count: result.count,
+        tasks: result.tasks
       }
     });
   } catch (error) {
@@ -285,6 +240,25 @@ router.get('/stats', auth, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch automation statistics'
+    });
+  }
+});
+
+// @desc    Get scheduler status
+// @route   GET /api/automation/scheduler-status
+// @access  Private (Owner/Admin)
+router.get('/scheduler-status', auth, requireOwnerOrAdmin, async (req, res) => {
+  try {
+    const status = automationScheduler.getStatus();
+    res.json({
+      success: true,
+      data: status
+    });
+  } catch (error) {
+    console.error('Error fetching scheduler status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch scheduler status'
     });
   }
 });

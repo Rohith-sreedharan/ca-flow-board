@@ -20,6 +20,7 @@ import { getValidatedToken } from '@/lib/auth';
 import { useClients } from '@/hooks/useClients';
 import { useEmployees } from '@/hooks/useEmployees';
 import { useTasks } from '@/hooks/useTasks';
+import { useAuth } from '@/hooks/useAuth';
 import { API_BASE_URL } from '@/config/api.config';
 
 const subtaskSchema = z.object({
@@ -78,9 +79,13 @@ export function AddTaskForm({ onSuccess }: { onSuccess: () => void }) {
   const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
   
   const user = useSelector((state: RootState) => state.auth.user);
+  const { user: authUser } = useAuth();
   const { clients = [], isLoading: isLoadingClients } = useClients();
   const { employees = [] } = useEmployees();
   const { addTask } = useTasks();
+  
+  // Check if user is employee (hide pricing for employees)
+  const isEmployee = authUser?.role === 'employee';
   
   // Ensure clients is always an array
   const clientsArray = Array.isArray(clients) ? clients : [];
@@ -956,35 +961,38 @@ export function AddTaskForm({ onSuccess }: { onSuccess: () => void }) {
 
                 {/* Payment & Recurrence Options */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="is_payable_task"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4 border border-gray-200 rounded-lg">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            className="mt-0.5"
-                          />
-                        </FormControl>
-                        <div className="space-y-1">
-                          <FormLabel className="text-sm font-medium text-gray-700">
-                            Payable Task
-                          </FormLabel>
-                          <p className="text-xs text-gray-500">
-                            Enable if this task requires payment from the client
-                          </p>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
+                  {/* Only show payment option for non-employees */}
+                  {!isEmployee && (
+                    <FormField
+                      control={form.control}
+                      name="is_payable_task"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4 border border-gray-200 rounded-lg">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              className="mt-0.5"
+                            />
+                          </FormControl>
+                          <div className="space-y-1">
+                            <FormLabel className="text-sm font-medium text-gray-700">
+                              Payable Task
+                            </FormLabel>
+                            <p className="text-xs text-gray-500">
+                              Enable if this task requires payment from the client
+                            </p>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   <FormField
                     control={form.control}
                     name="is_recurring"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4 border border-gray-200 rounded-lg">
+                      <FormItem className={`flex flex-row items-start space-x-3 space-y-0 p-4 border border-gray-200 rounded-lg ${isEmployee ? 'md:col-span-2' : ''}`}>
                         <FormControl>
                           <Checkbox
                             checked={field.value}
@@ -1008,8 +1016,8 @@ export function AddTaskForm({ onSuccess }: { onSuccess: () => void }) {
             </CardContent>
           </Card>
 
-          {/* Payment Configuration */}
-          {isPayableTask && (
+          {/* Payment Configuration - Hidden for employees */}
+          {!isEmployee && isPayableTask && (
             <Card className="shadow-sm border-gray-200">
               <CardContent className="p-8 space-y-6">
                 <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-3">Payment Configuration</h3>

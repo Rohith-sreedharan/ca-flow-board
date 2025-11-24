@@ -28,9 +28,21 @@ export const useSettings = (options: UseSettingsOptions = {}) => {
       try {
         return category ? await settingsService.getSettings(category) : await settingsService.getAllSettings();
       } catch (err: any) {
-        // Silently handle 403 errors for employees who don't have access to settings
+        // Handle 403 errors for employees who don't have access to full settings
         if (err.message?.includes('Access denied') || err.message?.includes('403')) {
-          console.log('⚠️ Settings access denied (employee role) - using defaults');
+          console.log('⚠️ Settings access denied - fetching public branding instead');
+          
+          // If requesting company category, fetch public branding
+          if (category === 'company') {
+            try {
+              const brandingData = await settingsService.getBrandingSettings();
+              return brandingData;
+            } catch (brandingErr) {
+              console.error('Failed to fetch branding:', brandingErr);
+              return {};
+            }
+          }
+          
           return category ? {} : { company: {}, notification: {}, security: {}, integration: {} };
         }
         throw err;

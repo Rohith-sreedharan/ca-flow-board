@@ -459,7 +459,9 @@ const OwnerClients = () => {
 
   // Calculate statistics
   const totalClients = clients.length;
-  const activeClients = clients.filter(client => client.status === 'active').length;
+  const activeClients = clients.filter(client => 
+    client.status && client.status.toLowerCase() === 'active'
+  ).length;
   const clientsWithGST = clients.filter(client => client.gst_number).length;
   const filteredResults = filteredClients.length;
 
@@ -668,7 +670,7 @@ const OwnerClients = () => {
                         <TableCell>
                           <Badge 
                             className={
-                              client.status === 'active' 
+                              client.status && client.status.toLowerCase() === 'active'
                                 ? 'bg-green-100 text-green-800 text-xs whitespace-nowrap' 
                                 : 'bg-red-100 text-red-800 text-xs whitespace-nowrap'
                             }

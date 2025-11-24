@@ -320,7 +320,7 @@ const EmployeeClients = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {assignedClients.filter(c => c.status === 'active').length}
+                {assignedClients.filter(c => c.status && c.status.toLowerCase() === 'active').length}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 With active status

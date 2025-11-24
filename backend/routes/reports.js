@@ -54,7 +54,8 @@ router.get('/gst', auth, authorize('owner', 'superadmin'), async (req, res) => {
       sortOrder = 'desc',
       sortReturnType, // if provided, sort by status of this return type
       page = 1,
-      pageSize = 10
+      pageSize = 10,
+      exportAll = false // When true, skip pagination and return all records
     } = req.query;
 
     // Extract firmId properly - it might be an object or a string
@@ -182,11 +183,15 @@ router.get('/gst', auth, authorize('owner', 'superadmin'), async (req, res) => {
     }
     
     // For each client, get invoices in the period
-    const skip = (parseInt(page) - 1) * parseInt(pageSize);
-    const limit = parseInt(pageSize);
-    
-    // Apply pagination to clients
-    const paginatedClients = clients.slice(skip, skip + limit);
+    // Skip pagination if exportAll is requested
+    let paginatedClients;
+    if (exportAll === 'true' || exportAll === true) {
+      paginatedClients = clients;
+    } else {
+      const skip = (parseInt(page) - 1) * parseInt(pageSize);
+      const limit = parseInt(pageSize);
+      paginatedClients = clients.slice(skip, skip + limit);
+    }
     
     // Compute financial year start for GST filing API based on startDate (FY: Apr-Mar)
     const startMonthIndex = startDate.getMonth(); // 0 = Jan
