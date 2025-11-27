@@ -240,6 +240,9 @@ export const invoicesAPI = {
   deleteInvoice: (id: string) => apiClient.delete(`/invoices/${id}`),
   sendInvoice: (id: string) => apiClient.post(`/invoices/${id}/send`),
   markAsPaid: (id: string, paymentData: Record<string, unknown>) => apiClient.post(`/invoices/${id}/payment`, paymentData),
+  getLastPricingByTask: (clientId: string, taskId: string) => apiClient.get(`/invoices/last-pricing/${clientId}/${taskId}`),
+  getLastPricingByClient: (clientId: string, params?: { category?: string; subCategory?: string }) => 
+    apiClient.get(`/invoices/last-pricing/${clientId}`, params),
 };
 
 // Dashboard API methods

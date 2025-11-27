@@ -161,7 +161,7 @@ export const useCreateInvoice = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create invoice');
+        throw new Error('Failed to update invoice statuses');
       }
 
       return response.json();
@@ -169,6 +169,76 @@ export const useCreateInvoice = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
     },
+  });
+};
+
+interface LastPricingData {
+  invoiceNumber: string;
+  invoiceDate: string;
+  items: InvoiceItem[];
+}
+
+interface LastPricingResponse {
+  success: boolean;
+  data: LastPricingData | null;
+  message: string;
+}
+
+export const useLastPricingByTask = (clientId: string | undefined, taskId: string | undefined) => {
+  const { isAuthenticated } = useAuth();
+
+  return useQuery({
+    queryKey: ['lastPricing', 'task', clientId, taskId],
+    queryFn: async (): Promise<LastPricingResponse> => {
+      const token = getValidatedToken();
+      const response = await fetch(`${API_BASE_URL}/invoices/last-pricing/${clientId}/${taskId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch last pricing');
+      }
+
+      return response.json();
+    },
+    enabled: isAuthenticated && !!clientId && !!taskId,
+  });
+};
+
+export const useLastPricingByClient = (
+  clientId: string | undefined, 
+  filters?: { category?: string; subCategory?: string }
+) => {
+  const { isAuthenticated } = useAuth();
+
+  return useQuery({
+    queryKey: ['lastPricing', 'client', clientId, filters],
+    queryFn: async (): Promise<LastPricingResponse> => {
+      const token = getValidatedToken();
+      const searchParams = new URLSearchParams();
+      
+      if (filters?.category) searchParams.append('category', filters.category);
+      if (filters?.subCategory) searchParams.append('subCategory', filters.subCategory);
+
+      const url = `${API_BASE_URL}/invoices/last-pricing/${clientId}${searchParams.toString() ? '?' + searchParams.toString() : ''}`;
+      
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch last pricing');
+      }
+
+      return response.json();
+    },
+    enabled: isAuthenticated && !!clientId,
   });
 };
 

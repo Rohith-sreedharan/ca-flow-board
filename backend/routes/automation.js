@@ -6,6 +6,7 @@ import Task from '../models/Task.js';
 import TaskTemplate from '../models/TaskTemplate.js';
 import Settings from '../models/Settings.js';
 import automationScheduler from '../services/automationScheduler.js';
+import recurringTaskService from '../services/recurringTaskService.js';
 
 const router = express.Router();
 
@@ -250,15 +251,50 @@ router.get('/stats', auth, async (req, res) => {
 router.get('/scheduler-status', auth, requireOwnerOrAdmin, async (req, res) => {
   try {
     const status = automationScheduler.getStatus();
+    const recurringStatus = recurringTaskService.getStatus();
     res.json({
       success: true,
-      data: status
+      data: {
+        templateScheduler: status,
+        recurringTaskService: recurringStatus
+      }
     });
   } catch (error) {
     console.error('Error fetching scheduler status:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch scheduler status'
+    });
+  }
+});
+
+// @desc    Manually trigger recurring task generation (for testing)
+// @route   POST /api/automation/generate-recurring
+// @access  Private (Owner/Admin)
+router.post('/generate-recurring', auth, requireOwnerOrAdmin, async (req, res) => {
+  try {
+    console.log('🔄 Manually triggering recurring task generation...');
+    const result = await recurringTaskService.checkAndGenerateRecurringTasks();
+    
+    res.json({
+      success: true,
+      message: `Generated ${result.count} recurring task(s)`,
+      data: {
+        count: result.count,
+        tasks: result.tasks.map(t => ({
+          id: t._id,
+          title: t.title,
+          dueDate: t.dueDate,
+          client: t.client
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Error generating recurring tasks:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate recurring tasks',
+      error: error.message
     });
   }
 });

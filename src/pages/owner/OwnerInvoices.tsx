@@ -46,6 +46,42 @@ interface InvoiceFilters {
   sortOrder: 'asc' | 'desc';
 }
 
+// Wrapper component to fetch invoice data and pass to form
+const EditInvoiceWrapper = ({ invoiceId, onSuccess }: { invoiceId: string; onSuccess: () => void }) => {
+  const { data: invoiceResponse, isLoading } = useInvoice(invoiceId);
+  
+  if (isLoading) {
+    return <div className="p-8 text-center">Loading invoice...</div>;
+  }
+  
+  if (!invoiceResponse?.data) {
+    return <div className="p-8 text-center text-red-600">Invoice not found</div>;
+  }
+  
+  const invoice = invoiceResponse.data;
+  
+  // Transform invoice data to form format
+  const initialData: any = {
+    type: invoice.type,
+    client: typeof invoice.client === 'string' ? invoice.client : invoice.client?._id || '',
+    issueDate: invoice.issueDate ? new Date(invoice.issueDate) : new Date(),
+    dueDate: invoice.dueDate ? new Date(invoice.dueDate) : new Date(),
+    items: invoice.items || [],
+    notes: invoice.notes || '',
+    discount: typeof invoice.discount === 'number' ? invoice.discount : 0,
+    paymentTerms: invoice.paymentTerms || '',
+    interStateTransaction: invoice.gst?.igst > 0 || false,
+  };
+  
+  return (
+    <EnhancedInvoiceForm 
+      onSuccess={onSuccess}
+      initialData={initialData}
+      isEditing={true}
+    />
+  );
+};
+
 const OwnerInvoices = () => {
   const dispatch = useDispatch();
   const { modals } = useSelector((state: RootState) => state.ui);
@@ -63,6 +99,10 @@ const OwnerInvoices = () => {
   // Bulk actions state
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
   const [isSelectAllChecked, setIsSelectAllChecked] = useState(false);
+  
+  // Edit invoice state
+  const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Fetch invoices with filters
   const { 
@@ -90,6 +130,17 @@ const OwnerInvoices = () => {
   
   const handleCloseAddInvoiceModal = () => {
     dispatch(toggleModal({ modal: 'addInvoice', value: false }));
+  };
+  
+  const handleOpenEditModal = (invoiceId: string) => {
+    setEditingInvoiceId(invoiceId);
+    setIsEditModalOpen(true);
+  };
+  
+  const handleCloseEditModal = () => {
+    setEditingInvoiceId(null);
+    setIsEditModalOpen(false);
+    refetch(); // Refresh invoice list
   };
 
   const handleFiltersChange = (newFilters: InvoiceFilters) => {
@@ -482,7 +533,7 @@ const OwnerInvoices = () => {
                                 <Eye className="h-4 w-4 mr-2 text-blue-600" />
                                 <span>View Details</span>
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="cursor-pointer">
+                              <DropdownMenuItem className="cursor-pointer" onClick={() => handleOpenEditModal(invoice._id)}>
                                 <Edit className="h-4 w-4 mr-2 text-green-600" />
                                 <span>Edit Invoice</span>
                               </DropdownMenuItem>
@@ -597,6 +648,23 @@ const OwnerInvoices = () => {
           >
             <EnhancedInvoiceForm onSuccess={handleCloseAddInvoiceModal} />
           </FormDialog>
+          
+          {/* Edit Invoice Modal */}
+          {editingInvoiceId && (
+            <FormDialog
+              open={isEditModalOpen}
+              onOpenChange={handleCloseEditModal}
+              title="Edit Invoice"
+              description="Update invoice details"
+              showFooter={false}
+              className="max-w-6xl"
+            >
+              <EditInvoiceWrapper 
+                invoiceId={editingInvoiceId}
+                onSuccess={handleCloseEditModal}
+              />
+            </FormDialog>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -53,6 +53,7 @@ import { seedTemplatesForAllFirms } from './seeds/index.js';
 import chatWebSocketService from './services/chatWebSocket.js';
 import taskWebSocketService from './services/taskWebSocket.js';
 import automationScheduler from './services/automationScheduler.js';
+import recurringTaskService from './services/recurringTaskService.js';
 import { createServer } from 'http';
 
 const app = express();
@@ -102,6 +103,10 @@ const initializeApp = async () => {
     // Initialize automation scheduler
     console.log('🤖 Starting automation scheduler...');
     await automationScheduler.initialize();
+    
+    // Initialize recurring task service
+    console.log('🔄 Starting recurring task service...');
+    await recurringTaskService.initialize();
   } catch (error) {
     console.error('❌ App initialization failed:', error);
   }
@@ -290,6 +295,7 @@ server.listen(PORT, '0.0.0.0', () => {
 process.on('SIGTERM', () => {
   console.log('📛 SIGTERM signal received: closing HTTP server and stopping schedulers');
   automationScheduler.stopAll();
+  recurringTaskService.stopAll();
   server.close(() => {
     console.log('✅ HTTP server closed');
     process.exit(0);
@@ -299,6 +305,7 @@ process.on('SIGTERM', () => {
 process.on('SIGINT', () => {
   console.log('📛 SIGINT signal received: closing HTTP server and stopping schedulers');
   automationScheduler.stopAll();
+  recurringTaskService.stopAll();
   server.close(() => {
     console.log('✅ HTTP server closed');
     process.exit(0);

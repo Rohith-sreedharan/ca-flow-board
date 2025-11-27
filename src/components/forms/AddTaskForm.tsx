@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -10,6 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +40,13 @@ const formSchema = z.object({
   category: z.enum(['gst', 'itr', 'roc', 'other'], {
     required_error: "Please select a category",
   }),
+  sub_categories: z.array(z.string()).optional(),
+  sub_category_configs: z.record(z.object({
+    due_date: z.string().optional(),
+    is_recurring: z.boolean().default(false),
+    recurrence_interval: z.number().optional(),
+    recurrence_monthly_date: z.number().optional(),
+  })).optional(),
   priority: z.enum(['low', 'medium', 'high', 'urgent'], {
     required_error: "Please select a priority",
   }),
@@ -77,6 +86,8 @@ export function AddTaskForm({ onSuccess }: { onSuccess: () => void }) {
   const [showPreview, setShowPreview] = useState(false);
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
   const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
+  const [availableSubCategories, setAvailableSubCategories] = useState<string[]>([]);
+  const [activeSubCategoryTab, setActiveSubCategoryTab] = useState<string>('');
   
   const user = useSelector((state: RootState) => state.auth.user);
   const { user: authUser } = useAuth();
@@ -96,6 +107,8 @@ export function AddTaskForm({ onSuccess }: { onSuccess: () => void }) {
       title: '',
       description: '',
       category: 'other',
+      sub_categories: [],
+      sub_category_configs: {},
       priority: 'medium',
       client_id: [], // Changed to array for multiple clients
       assigned_to: [],
@@ -125,6 +138,7 @@ export function AddTaskForm({ onSuccess }: { onSuccess: () => void }) {
     },
   });
 
+  const selectedCategory = form.watch('category');
   const isPayableTask = form.watch('is_payable_task');
   const isRecurring = form.watch('is_recurring');
   const saveAsTemplate = form.watch('save_as_template');
@@ -132,6 +146,37 @@ export function AddTaskForm({ onSuccess }: { onSuccess: () => void }) {
   const recurrencePattern = form.watch('recurrence_pattern');
   const recurrenceUnit = form.watch('recurrence_unit');
   const monthlyType = form.watch('recurrence_monthly_type');
+
+  // Fetch sub-categories when category changes
+  useEffect(() => {
+    const fetchSubCategories = async () => {
+      if (selectedCategory && selectedCategory !== 'other') {
+        try {
+          const token = getValidatedToken();
+          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+          
+          const response = await fetch(`${API_BASE_URL}/tasks/sub-categories/${selectedCategory}`, {
+            headers
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+              setAvailableSubCategories(result.data);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching sub-categories:', error);
+          setAvailableSubCategories([]);
+        }
+      } else {
+        setAvailableSubCategories([]);
+      }
+    };
+
+    fetchSubCategories();
+  }, [selectedCategory]);
 
   // Load template data based on category
   const loadCategoryTemplate = async (category: string) => {
@@ -149,49 +194,44 @@ export function AddTaskForm({ onSuccess }: { onSuccess: () => void }) {
         const template = result.data;
         
         if (template) {
-          // Pre-populate form with template data, but keep certain fields empty for user input
-          form.reset({
-            // Keep user-specific fields empty
-            title: '',
-            client_id: [], // Changed to array for multiple clients
-            assigned_to: [],
-            due_date: '',
-            save_as_template: false,
-            template_name: '',
-            is_draft: false,
-            
-            // Load template data
-            category: category as 'gst' | 'itr' | 'roc' | 'other',
-            description: template.description || '',
-            priority: template.priority || 'medium',
-            is_payable_task: template.is_payable_task || false,
-            price: template.price || 0,
-            payable_task_type: template.payable_task_type || '',
-            is_recurring: template.is_recurring || false,
-            recurrence_pattern: template.recurrence_pattern || 'weekly',
-            recurrence_interval: template.recurrence_interval || 1,
-            recurrence_unit: template.recurrence_unit || 'week',
-            recurrence_days: template.recurrence_days || [],
-            recurrence_monthly_type: template.recurrence_monthly_type || 'date',
-            recurrence_monthly_date: template.recurrence_monthly_date || 1,
-            recurrence_monthly_week: template.recurrence_monthly_week || 1,
-            recurrence_monthly_day: template.recurrence_monthly_day || 'Mon',
-            recurrence_yearly_month: template.recurrence_yearly_month || 1,
-            recurrence_yearly_date: template.recurrence_yearly_date || 1,
-            recurrence_end_type: template.recurrence_end_type || 'never',
-            recurrence_end_count: template.recurrence_end_count || 12,
-            recurrence_end_date: template.recurrence_end_date || '',
-            advance_creation_days: template.advance_creation_days || 0,
-            // Load subtasks from template
-            subtasks: template.subtasks ? template.subtasks.map((st: any) => ({
+          // Get current form values to preserve user input
+          const currentValues = form.getValues();
+          
+          // Update only template-related fields, preserve user input
+          form.setValue('sub_categories', template.sub_category ? [template.sub_category] : []);
+          form.setValue('description', template.description || currentValues.description || '');
+          form.setValue('priority', template.priority || currentValues.priority);
+          form.setValue('is_payable_task', template.is_payable_task || false);
+          form.setValue('price', template.price || currentValues.price);
+          form.setValue('payable_task_type', template.payable_task_type || '');
+          form.setValue('is_recurring', template.is_recurring || false);
+          form.setValue('recurrence_pattern', template.recurrence_pattern || 'weekly');
+          form.setValue('recurrence_interval', template.recurrence_interval || 1);
+          form.setValue('recurrence_unit', template.recurrence_unit || 'week');
+          form.setValue('recurrence_days', template.recurrence_days || []);
+          form.setValue('recurrence_monthly_type', template.recurrence_monthly_type || 'date');
+          form.setValue('recurrence_monthly_date', template.recurrence_monthly_date || 1);
+          form.setValue('recurrence_monthly_week', template.recurrence_monthly_week || 1);
+          form.setValue('recurrence_monthly_day', template.recurrence_monthly_day || 'Mon');
+          form.setValue('recurrence_yearly_month', template.recurrence_yearly_month || 1);
+          form.setValue('recurrence_yearly_date', template.recurrence_yearly_date || 1);
+          form.setValue('recurrence_end_type', template.recurrence_end_type || 'never');
+          form.setValue('recurrence_end_count', template.recurrence_end_count || 12);
+          form.setValue('recurrence_end_date', template.recurrence_end_date || '');
+          form.setValue('advance_creation_days', template.advance_creation_days || 0);
+          
+          // Load subtasks from template
+          if (template.subtasks && template.subtasks.length > 0) {
+            const subtasks = template.subtasks.map((st: any) => ({
               title: st.title,
               description: st.description || '',
               dueDate: st.dueDate || '',
               order: st.order,
               estimatedHours: st.estimatedHours || 0,
               completed: false,
-            })) : [],
-          });
+            }));
+            form.setValue('subtasks', subtasks);
+          }
           
           const subtaskCount = template.subtasks?.length || 0;
           toast.success(`Template loaded: ${template.title}${subtaskCount > 0 ? ` with ${subtaskCount} subtask${subtaskCount > 1 ? 's' : ''}` : ''}`);
@@ -314,103 +354,148 @@ export function AddTaskForm({ onSuccess }: { onSuccess: () => void }) {
         return;
       }
 
+      // Handle sub-categories - each sub-category becomes a separate task
+      const subCategories = values.sub_categories && values.sub_categories.length > 0 
+        ? values.sub_categories 
+        : [undefined]; // If no sub-categories, create one task
+
       const createdTasks = [];
       let successCount = 0;
       let errorCount = 0;
 
-      // Create tasks for each selected client
+      // Create tasks for each combination of client and sub-category
       for (const clientId of clientIds) {
-        try {
-          // Prepare the task data for this specific client
-          const assignees = values.assigned_to || [];
-          
-          console.log('📝 Creating task with assignees:', assignees);
-          console.log('📝 First assignee:', assignees[0]);
-          console.log('📝 Collaborators:', assignees.slice(1));
-          
-          const taskData = {
-            title: values.title,
-            description: values.description,
-            category: values.category,
-            priority: values.priority,
-            status: 'todo' as const,
-            client_id: clientId, // Single client for this task (snake_case for backend)
-            assigned_to: assignees, // snake_case for backend - backend will use first as assignedTo
-            collaborators: assignees.length > 1 ? assignees.slice(1) : [], // Rest go to collaborators
-            due_date: values.due_date, // snake_case for backend
-            created_by: user?.id, // snake_case for backend
-            is_payable_task: values.is_payable_task, // snake_case for backend
-            price: values.price,
-            payable_task_type: values.payable_task_type, // snake_case for backend
-            is_recurring: values.is_recurring, // snake_case for backend
-            recurrence_pattern: values.recurrence_pattern, // snake_case for backend
-            // Include subtasks 
-            subtasks: values.subtasks && values.subtasks.length > 0 ? values.subtasks : undefined,
-          };
-          
-          console.log('📤 Sending task data:', JSON.stringify(taskData, null, 2));
+        for (const subCategory of subCategories) {
+          try {
+            // Prepare the task data for this specific client and sub-category
+            const assignees = values.assigned_to || [];
+            
+            console.log('📝 Creating task with assignees:', assignees);
+            console.log('📝 First assignee:', assignees[0]);
+            console.log('📝 Collaborators:', assignees.slice(1));
+            console.log('📝 Sub-category:', subCategory);
+            
+            // Build task title - append sub-category if it exists
+            const taskTitle = subCategory ? `${values.title} - ${subCategory}` : values.title;
+            
+            // Get sub-category specific configuration or fall back to global values
+            const subCategoryConfig = subCategory && values.sub_category_configs?.[subCategory];
+            const dueDate = subCategoryConfig?.due_date || values.due_date;
+            const isRecurring = subCategoryConfig?.is_recurring ?? values.is_recurring;
+            const recurrenceInterval = subCategoryConfig?.recurrence_interval;
+            const recurrenceMonthlyDate = subCategoryConfig?.recurrence_monthly_date;
+            
+            const taskData = {
+              title: taskTitle,
+              description: values.description,
+              category: values.category,
+              sub_category: subCategory || undefined,
+              priority: values.priority,
+              status: 'todo' as const,
+              client_id: clientId, // Single client for this task (snake_case for backend)
+              assigned_to: assignees, // snake_case for backend - backend will use first as assignedTo
+              collaborators: assignees.length > 1 ? assignees.slice(1) : [], // Rest go to collaborators
+              due_date: dueDate, // Use sub-category specific or global due date
+              created_by: user?.id, // snake_case for backend
+              is_payable_task: values.is_payable_task, // snake_case for backend
+              price: values.price,
+              payable_task_type: values.payable_task_type, // snake_case for backend
+              is_recurring: isRecurring, // Use sub-category specific or global recurring flag
+              recurrence_pattern: values.recurrence_pattern, // snake_case for backend
+              recurrence_interval: recurrenceInterval, // Sub-category specific interval
+              recurrence_monthly_date: recurrenceMonthlyDate, // Sub-category specific monthly date
+              // Include subtasks 
+              subtasks: values.subtasks && values.subtasks.length > 0 ? values.subtasks : undefined,
+            };
+            
+            console.log('📤 Sending task data:', JSON.stringify(taskData, null, 2));
 
-          // Create the task
-          const createdTask = await addTask(taskData);
-          createdTasks.push(createdTask);
-          successCount++;
+            // Create the task
+            const createdTask = await addTask(taskData);
+            
+            if (createdTask && createdTask.data) {
+              createdTasks.push(createdTask.data);
+              successCount++;
+              
+              // Trigger real-time update for each task
+              window.dispatchEvent(new CustomEvent('taskCreated', { detail: taskData }));
+            } else {
+              console.error('Task creation returned invalid data:', createdTask);
+              errorCount++;
+            }
 
-          // Trigger real-time update for each task
-          window.dispatchEvent(new CustomEvent('taskCreated', { detail: taskData }));
-
-        } catch (error) {
-          console.error(`Error creating task for client ${clientId}:`, error);
-          errorCount++;
+          } catch (error) {
+            console.error(`Error creating task for client ${clientId}, sub-category ${subCategory}:`, error);
+            errorCount++;
+          }
         }
       }
 
-      // Create quotations for payable tasks
+      // Create quotations for payable tasks - Group by client
       if (values.is_payable_task && values.price && values.price > 0 && createdTasks.length > 0) {
         let quotationSuccessCount = 0;
         let quotationErrorCount = 0;
 
-        for (const task of createdTasks) {
+        // Group tasks by client - filter out undefined tasks first
+        const validTasks = createdTasks.filter(task => task && (task.client_id || task.client));
+        
+        const tasksByClient = validTasks.reduce((acc, task) => {
+          const clientId = task.client_id || task.client?._id || task.client?.id;
+          if (!acc[clientId]) {
+            acc[clientId] = [];
+          }
+          acc[clientId].push(task);
+          return acc;
+        }, {} as Record<string, any[]>);
+
+        // Create one quotation per client with all their sub-category tasks
+        for (const [clientId, clientTasks] of Object.entries(tasksByClient)) {
           try {
             // Get client details from the clients array
-            const client = clientsArray.find(c => (c.id || c._id) === (task.client_id || task.client?._id || task.client?.id));
+            const client = clientsArray.find(c => (c.id || c._id) === clientId);
             
             if (!client) {
-              console.warn('Client not found for task:', task.id);
+              console.warn('Client not found for clientId:', clientId);
               continue;
             }
 
-            // Calculate due date (default to 30 days from now if not specified)
-            const dueDate = values.due_date 
-              ? new Date(values.due_date) 
+            // Use the first task's due date or default
+            const firstTaskConfig = clientTasks[0].sub_category 
+              ? values.sub_category_configs?.[clientTasks[0].sub_category]
+              : null;
+            const dueDate = firstTaskConfig?.due_date || values.due_date
+              ? new Date(firstTaskConfig?.due_date || values.due_date) 
               : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-            // Prepare invoice items with subtasks if available
+            // Prepare invoice items - one line per task (sub-category)
             const items = [];
             
-            // Main task item
-            items.push({
-              description: values.title + (values.description ? ` - ${values.description}` : ''),
-              quantity: 1,
-              rate: values.price,
-              amount: values.price,
-              taxable: true,
-              taxRate: 18,
-              task: task.id || task._id,
-            });
-
-            // Add subtasks as line items if they exist
-            if (values.subtasks && values.subtasks.length > 0) {
-              values.subtasks.forEach((subtask, index) => {
-                items.push({
-                  description: `  └─ ${subtask.title}${subtask.description ? `: ${subtask.description}` : ''}`,
-                  quantity: 1,
-                  rate: 0, // Subtasks are included in main price
-                  amount: 0,
-                  taxable: false,
-                  taxRate: 0,
-                });
+            clientTasks.forEach((task) => {
+              // Main task item
+              items.push({
+                description: task.title + (values.description ? ` - ${values.description}` : ''),
+                quantity: 1,
+                rate: values.price,
+                amount: values.price,
+                taxable: true,
+                taxRate: 18,
+                task: task.id || task._id,
               });
-            }
+
+              // Add subtasks as line items if they exist
+              if (values.subtasks && values.subtasks.length > 0) {
+                values.subtasks.forEach((subtask, index) => {
+                  items.push({
+                    description: `  └─ ${subtask.title}${subtask.description ? `: ${subtask.description}` : ''}`,
+                    quantity: 1,
+                    rate: 0, // Subtasks are included in main price
+                    amount: 0,
+                    taxable: false,
+                    taxRate: 0,
+                  });
+                });
+              }
+            });
 
             // Create quotation
             const quotationData = {
@@ -511,16 +596,22 @@ export function AddTaskForm({ onSuccess }: { onSuccess: () => void }) {
       }
 
       // Show appropriate success/error messages
-      if (successCount === clientIds.length) {
-        const message = clientIds.length === 1 
-          ? 'Task created successfully!' 
-          : `${successCount} tasks created successfully for ${successCount} clients!`;
-        toast.success(message);
+      const totalExpectedTasks = clientIds.length * subCategories.length;
+      if (successCount === totalExpectedTasks) {
+        let message = '';
+        if (subCategories.length > 1 && subCategories[0] !== undefined) {
+          message = `${successCount} tasks created successfully (${clientIds.length} client${clientIds.length > 1 ? 's' : ''} × ${subCategories.length} sub-categories)!`;
+        } else if (clientIds.length > 1) {
+          message = `${successCount} tasks created successfully for ${clientIds.length} clients!`;
+        } else {
+          message = 'Task created successfully!';
+        }
+        toast.success(message, { duration: 5000 });
         if (values.save_as_template && values.template_name) {
           toast.success('Template saved!');
         }
       } else if (successCount > 0) {
-        toast.success(`${successCount} tasks created successfully`);
+        toast.success(`${successCount} out of ${totalExpectedTasks} tasks created successfully`);
         if (errorCount > 0) {
           toast.error(`${errorCount} tasks failed to create`);
         }
@@ -653,6 +744,197 @@ export function AddTaskForm({ onSuccess }: { onSuccess: () => void }) {
                   />
                 </div>
 
+                {/* Sub-categories - Show when category is selected and has sub-categories */}
+                {selectedCategory && selectedCategory !== 'other' && availableSubCategories.length > 0 && (
+                  <FormField
+                    control={form.control}
+                    name="sub_categories"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="space-y-3">
+                          <FormLabel className="text-sm font-medium text-gray-700">
+                            Sub-Categories (Select applicable filings)
+                          </FormLabel>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                            {availableSubCategories.map((subCategory) => (
+                              <div key={subCategory} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`sub-cat-${subCategory}`}
+                                  checked={field.value?.includes(subCategory) || false}
+                                  onCheckedChange={(checked) => {
+                                    const currentValues = field.value || [];
+                                    if (checked) {
+                                      field.onChange([...currentValues, subCategory]);
+                                      // Set first selected as active tab
+                                      if (!activeSubCategoryTab && currentValues.length === 0) {
+                                        setActiveSubCategoryTab(subCategory);
+                                      }
+                                    } else {
+                                      field.onChange(currentValues.filter((val) => val !== subCategory));
+                                      // If removing active tab, switch to first available
+                                      if (activeSubCategoryTab === subCategory) {
+                                        const remaining = currentValues.filter((val) => val !== subCategory);
+                                        setActiveSubCategoryTab(remaining[0] || '');
+                                      }
+                                    }
+                                  }}
+                                />
+                                <Label
+                                  htmlFor={`sub-cat-${subCategory}`}
+                                  className="text-sm font-normal cursor-pointer"
+                                >
+                                  {subCategory}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                          {field.value && field.value.length > 0 && (
+                            <p className="text-xs text-blue-600">
+                              Selected: {field.value.length} sub-categor{field.value.length === 1 ? 'y' : 'ies'}
+                            </p>
+                          )}
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {/* Sub-category Specific Configuration Tabs */}
+                {form.watch('sub_categories') && form.watch('sub_categories')!.length > 0 && (
+                  <div className="space-y-3">
+                    <FormLabel className="text-sm font-medium text-gray-700">
+                      Configure Each Sub-Category
+                    </FormLabel>
+                    <Card className="border-blue-200 bg-blue-50/50">
+                      <CardContent className="p-4">
+                        <Tabs value={activeSubCategoryTab} onValueChange={setActiveSubCategoryTab}>
+                          <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${form.watch('sub_categories')!.length}, minmax(0, 1fr))` }}>
+                            {form.watch('sub_categories')!.map((subCategory) => (
+                              <TabsTrigger key={subCategory} value={subCategory} className="text-xs">
+                                {subCategory}
+                              </TabsTrigger>
+                            ))}
+                          </TabsList>
+                          
+                          {form.watch('sub_categories')!.map((subCategory) => (
+                            <TabsContent key={subCategory} value={subCategory} className="space-y-4 mt-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Due Date for this sub-category */}
+                                <div className="space-y-2">
+                                  <Label className="text-sm font-medium text-gray-700">
+                                    Due Date for {subCategory}
+                                  </Label>
+                                  <Input
+                                    type="date"
+                                    className="h-11 border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                    value={form.watch('sub_category_configs')?.[subCategory]?.due_date || ''}
+                                    onChange={(e) => {
+                                      const configs = form.watch('sub_category_configs') || {};
+                                      form.setValue('sub_category_configs', {
+                                        ...configs,
+                                        [subCategory]: {
+                                          ...configs[subCategory],
+                                          due_date: e.target.value,
+                                        },
+                                      });
+                                    }}
+                                  />
+                                </div>
+
+                                {/* Recurring for this sub-category */}
+                                <div className="space-y-2">
+                                  <div className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg bg-white">
+                                    <Checkbox
+                                      id={`recurring-${subCategory}`}
+                                      checked={form.watch('sub_category_configs')?.[subCategory]?.is_recurring || false}
+                                      onCheckedChange={(checked) => {
+                                        const configs = form.watch('sub_category_configs') || {};
+                                        form.setValue('sub_category_configs', {
+                                          ...configs,
+                                          [subCategory]: {
+                                            ...configs[subCategory],
+                                            is_recurring: checked as boolean,
+                                          },
+                                        });
+                                      }}
+                                    />
+                                    <Label htmlFor={`recurring-${subCategory}`} className="text-sm font-medium text-gray-700 cursor-pointer">
+                                      Recurring Task
+                                    </Label>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Recurrence Configuration - Show if recurring is enabled */}
+                              {form.watch('sub_category_configs')?.[subCategory]?.is_recurring && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white border border-gray-200 rounded-lg">
+                                  <div className="space-y-2">
+                                    <Label className="text-sm font-medium text-gray-700">
+                                      Recurrence Interval (days)
+                                    </Label>
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      placeholder="e.g., 30 for monthly"
+                                      className="h-11 border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                      value={form.watch('sub_category_configs')?.[subCategory]?.recurrence_interval || ''}
+                                      onChange={(e) => {
+                                        const configs = form.watch('sub_category_configs') || {};
+                                        form.setValue('sub_category_configs', {
+                                          ...configs,
+                                          [subCategory]: {
+                                            ...configs[subCategory],
+                                            recurrence_interval: parseInt(e.target.value) || undefined,
+                                          },
+                                        });
+                                      }}
+                                    />
+                                    <p className="text-xs text-gray-500">
+                                      e.g., 30 for monthly, 90 for quarterly
+                                    </p>
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    <Label className="text-sm font-medium text-gray-700">
+                                      Due Date of Month
+                                    </Label>
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      max="31"
+                                      placeholder="e.g., 10 for 10th of month"
+                                      className="h-11 border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                      value={form.watch('sub_category_configs')?.[subCategory]?.recurrence_monthly_date || ''}
+                                      onChange={(e) => {
+                                        const configs = form.watch('sub_category_configs') || {};
+                                        form.setValue('sub_category_configs', {
+                                          ...configs,
+                                          [subCategory]: {
+                                            ...configs[subCategory],
+                                            recurrence_monthly_date: parseInt(e.target.value) || undefined,
+                                          },
+                                        });
+                                      }}
+                                    />
+                                    <p className="text-xs text-gray-500">
+                                      10 for GSTR-1, 20 for GSTR-3B, etc.
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="text-xs text-blue-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                                💡 Each {subCategory} task will be created with its own due date and recurring schedule
+                              </div>
+                            </TabsContent>
+                          ))}
+                        </Tabs>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+
                 <FormField
                   control={form.control}
                   name="description"
@@ -749,13 +1031,14 @@ export function AddTaskForm({ onSuccess }: { onSuccess: () => void }) {
                                           <Badge 
                                             key={`${clientId}-${index}`} 
                                             variant="secondary" 
-                                            className="text-xs flex items-center gap-1 pr-1"
+                                            className="text-xs flex items-center gap-1 pr-0.5"
                                           >
                                             <span className="max-w-[120px] truncate">
                                               {client?.name || client?.client_code || 'Unknown'}
                                             </span>
-                                            <X 
-                                              className="h-3 w-3 cursor-pointer hover:text-red-500 flex-shrink-0" 
+                                            <button
+                                              type="button"
+                                              className="ml-1 p-0.5 hover:bg-red-100 rounded"
                                               onClick={(e) => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
@@ -763,7 +1046,9 @@ export function AddTaskForm({ onSuccess }: { onSuccess: () => void }) {
                                                 const newValues = currentValues.filter(id => id !== clientId);
                                                 field.onChange(newValues);
                                               }}
-                                            />
+                                            >
+                                              <X className="h-3 w-3 hover:text-red-500" />
+                                            </button>
                                           </Badge>
                                         );
                                       })}
@@ -843,7 +1128,12 @@ export function AddTaskForm({ onSuccess }: { onSuccess: () => void }) {
                     name="due_date"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium text-gray-700">Due Date</FormLabel>
+                        <FormLabel className="text-sm font-medium text-gray-700">
+                          Due Date
+                          {form.watch('sub_categories') && form.watch('sub_categories')!.length > 0 && (
+                            <span className="text-xs text-gray-500 ml-1 font-normal">(Fallback - configure per sub-category above)</span>
+                          )}
+                        </FormLabel>
                         <FormControl>
                           <Input 
                             type="date" 
@@ -851,7 +1141,13 @@ export function AddTaskForm({ onSuccess }: { onSuccess: () => void }) {
                             {...field} 
                           />
                         </FormControl>
-                        <FormMessage />
+                        {form.watch('sub_categories') && form.watch('sub_categories')!.length > 0 ? (
+                          <p className="text-xs text-amber-600 mt-1">
+                            ⚠️ Each sub-category can have its own due date. This is only used as fallback.
+                          </p>
+                        ) : (
+                          <FormMessage />
+                        )}
                       </FormItem>
                     )}
                   />
@@ -1000,13 +1296,21 @@ export function AddTaskForm({ onSuccess }: { onSuccess: () => void }) {
                             className="mt-0.5"
                           />
                         </FormControl>
-                        <div className="space-y-1">
+                        <div className="space-y-1 flex-1">
                           <FormLabel className="text-sm font-medium text-gray-700">
                             Recurring Task
+                            {form.watch('sub_categories') && form.watch('sub_categories')!.length > 0 && (
+                              <span className="text-xs text-gray-500 ml-1 font-normal">(Fallback - configure per sub-category above)</span>
+                            )}
                           </FormLabel>
                           <p className="text-xs text-gray-500">
                             Enable if this task should repeat based on a schedule
                           </p>
+                          {form.watch('sub_categories') && form.watch('sub_categories')!.length > 0 && (
+                            <p className="text-xs text-amber-600 mt-1">
+                              ⚠️ Each sub-category can have its own recurrence pattern (configured above).
+                            </p>
+                          )}
                         </div>
                       </FormItem>
                     )}

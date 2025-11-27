@@ -114,6 +114,155 @@ router.get('/:id', auth, async (req, res) => {
   }
 });
 
+// @desc    Get last invoice pricing for same client and task
+// @route   GET /api/invoices/last-pricing/:clientId/:taskId
+// @access  Private
+router.get('/last-pricing/:clientId/:taskId', auth, async (req, res) => {
+  try {
+    const { clientId, taskId } = req.params;
+
+    // Find the most recent invoice for this client with an item linked to this task
+    const lastInvoice = await Invoice.findOne({
+      firm: req.user.firmId._id,
+      client: clientId,
+      'items.task': taskId,
+      status: { $in: ['sent', 'paid', 'partially_paid', 'overdue'] } // Only consider finalized invoices
+    })
+      .sort({ createdAt: -1 }) // Most recent first
+      .select('items invoiceNumber createdAt');
+
+    if (!lastInvoice) {
+      return res.json({
+        success: true,
+        data: null,
+        message: 'No previous invoice found for this client and task'
+      });
+    }
+
+    // Find the specific item(s) related to the task
+    const taskItems = lastInvoice.items.filter(
+      item => item.task && item.task.toString() === taskId
+    );
+
+    if (taskItems.length === 0) {
+      return res.json({
+        success: true,
+        data: null,
+        message: 'No pricing data found for this task in previous invoices'
+      });
+    }
+
+    // Return the pricing information
+    res.json({
+      success: true,
+      data: {
+        invoiceNumber: lastInvoice.invoiceNumber,
+        invoiceDate: lastInvoice.createdAt,
+        items: taskItems.map(item => ({
+          description: item.description,
+          quantity: item.quantity,
+          rate: item.rate,
+          amount: item.amount,
+          taxable: item.taxable,
+          hsn: item.hsn,
+          taxRate: item.taxRate
+        }))
+      },
+      message: 'Previous pricing fetched successfully'
+    });
+  } catch (error) {
+    console.error('Get last pricing error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Get last invoice pricing for client (without specific task)
+// @route   GET /api/invoices/last-pricing/:clientId
+// @access  Private
+router.get('/last-pricing/:clientId', auth, async (req, res) => {
+  try {
+    const { clientId } = req.params;
+    const { category, subCategory } = req.query;
+
+    // Build query
+    const query = {
+      firm: req.user.firmId._id,
+      client: clientId,
+      status: { $in: ['sent', 'paid', 'partially_paid', 'overdue'] }
+    };
+
+    // Find the most recent invoice for this client
+    const lastInvoice = await Invoice.findOne(query)
+      .sort({ createdAt: -1 })
+      .populate({
+        path: 'items.task',
+        select: 'title category sub_category'
+      })
+      .select('items invoiceNumber createdAt');
+
+    if (!lastInvoice) {
+      return res.json({
+        success: true,
+        data: null,
+        message: 'No previous invoice found for this client'
+      });
+    }
+
+    // If category filter is provided, filter items by task category
+    let filteredItems = lastInvoice.items;
+    if (category) {
+      filteredItems = lastInvoice.items.filter(item => {
+        if (!item.task) return false;
+        if (item.task.category !== category) return false;
+        if (subCategory && item.task.sub_category !== subCategory) return false;
+        return true;
+      });
+    }
+
+    if (filteredItems.length === 0) {
+      return res.json({
+        success: true,
+        data: null,
+        message: 'No matching pricing data found in previous invoices'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        invoiceNumber: lastInvoice.invoiceNumber,
+        invoiceDate: lastInvoice.createdAt,
+        items: filteredItems.map(item => ({
+          description: item.description,
+          quantity: item.quantity,
+          rate: item.rate,
+          amount: item.amount,
+          taxable: item.taxable,
+          hsn: item.hsn,
+          taxRate: item.taxRate,
+          taskInfo: item.task ? {
+            title: item.task.title,
+            category: item.task.category,
+            subCategory: item.task.sub_category
+          } : null
+        }))
+      },
+      message: 'Previous pricing fetched successfully'
+    });
+  } catch (error) {
+    console.error('Get last pricing error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+});
+
 // @desc    Create invoice
 // @route   POST /api/invoices
 // @access  Private

@@ -2,6 +2,9 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { setActiveFilters, clearFilters } from '@/store/slices/uiSlice';
+import { useState, useEffect } from 'react';
+import { API_BASE_URL } from '@/config/api.config';
+import { getValidatedToken } from '@/lib/auth';
 import {
   Card,
   CardContent,
@@ -30,6 +33,8 @@ interface TaskFiltersProps {
 const TaskFilters = ({ sortBy, sortDirection, onSortChange }: TaskFiltersProps) => {
   const dispatch = useDispatch();
   const { activeFilters } = useSelector((state: RootState) => state.ui);
+  const [subCategories, setSubCategories] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   const statusOptions = [
     { value: 'todo', label: 'To Do' },
@@ -46,10 +51,10 @@ const TaskFilters = ({ sortBy, sortDirection, onSortChange }: TaskFiltersProps) 
   ];
 
   const categoryOptions = [
+    { value: 'all', label: 'All Categories' },
     { value: 'gst', label: 'GST' },
-    { value: 'tax', label: 'Tax' },
-    { value: 'audit', label: 'Audit' },
-    { value: 'compliance', label: 'Compliance' },
+    { value: 'itr', label: 'ITR' },
+    { value: 'roc', label: 'ROC' },
     { value: 'other', label: 'Other' },
   ];
 
@@ -58,6 +63,37 @@ const TaskFilters = ({ sortBy, sortDirection, onSortChange }: TaskFiltersProps) 
     { value: 'overdue', label: 'Overdue' },
     { value: 'thisWeek', label: 'This Week' },
   ];
+
+  // Fetch sub-categories when category changes
+  useEffect(() => {
+    const fetchSubCategories = async () => {
+      if (selectedCategory && selectedCategory !== 'all') {
+        try {
+          const token = getValidatedToken();
+          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+          
+          const response = await fetch(`${API_BASE_URL}/tasks/sub-categories/${selectedCategory}`, {
+            headers
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+              setSubCategories(result.data);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching sub-categories:', error);
+          setSubCategories([]);
+        }
+      } else {
+        setSubCategories([]);
+      }
+    };
+
+    fetchSubCategories();
+  }, [selectedCategory]);
 
   const handleStatusChange = (id: string, checked: boolean) => {
     const currentStatuses = activeFilters.status || [];
@@ -98,6 +134,23 @@ const TaskFilters = ({ sortBy, sortDirection, onSortChange }: TaskFiltersProps) 
       dispatch(setActiveFilters({ 
         category: currentCategories.filter((c) => c !== id) 
       }));
+    }
+  };
+
+  const handleCategorySelect = (value: string) => {
+    setSelectedCategory(value);
+    if (value === 'all') {
+      dispatch(setActiveFilters({ category: undefined, sub_category: undefined }));
+    } else {
+      dispatch(setActiveFilters({ category: value, sub_category: undefined }));
+    }
+  };
+
+  const handleSubCategoryChange = (value: string) => {
+    if (value === 'all') {
+      dispatch(setActiveFilters({ sub_category: undefined }));
+    } else {
+      dispatch(setActiveFilters({ sub_category: value }));
     }
   };
 
@@ -170,25 +223,48 @@ const TaskFilters = ({ sortBy, sortDirection, onSortChange }: TaskFiltersProps) 
           
           <div>
             <Label className="mb-2 block font-medium">Category</Label>
-            <div className="space-y-2">
-              {categoryOptions.map((option) => (
-                <div key={option.value} className="flex items-center space-x-2">
-                  <Checkbox 
-                    id={`category-${option.value}`}
-                    checked={(activeFilters.category || []).includes(option.value)}
-                    onCheckedChange={(checked) => 
-                      handleCategoryChange(option.value, checked as boolean)
-                    }
-                  />
-                  <Label 
-                    htmlFor={`category-${option.value}`}
-                    className="text-sm font-normal"
-                  >
-                    {option.label}
-                  </Label>
-                </div>
-              ))}
-            </div>
+            <Select 
+              value={selectedCategory}
+              onValueChange={handleCategorySelect}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {categoryOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            
+            {/* Sub-category dropdown - only show when category is selected */}
+            {selectedCategory && selectedCategory !== 'all' && subCategories.length > 0 && (
+              <div className="mt-3">
+                <Label className="mb-2 block font-medium text-sm">Sub-Category</Label>
+                <Select 
+                  value={activeFilters.sub_category || 'all'}
+                  onValueChange={handleSubCategoryChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select sub-category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="all">All Sub-Categories</SelectItem>
+                      {subCategories.map((subCat) => (
+                        <SelectItem key={subCat} value={subCat}>
+                          {subCat}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
           
           <div>

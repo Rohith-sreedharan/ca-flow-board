@@ -67,6 +67,7 @@ interface GSTReportTableProps {
   pageSize: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
   sortBy: string;
   sortOrder: 'asc' | 'desc';
   onSort: (field: string) => void;
@@ -93,6 +94,7 @@ export const GSTReportTable = ({
   pageSize,
   totalPages,
   onPageChange,
+  onPageSizeChange,
   sortBy,
   sortOrder,
   onSort,
@@ -497,8 +499,27 @@ export const GSTReportTable = ({
 
       {/* Pagination */}
       <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          Page {page} of {totalPages}
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-muted-foreground">
+            Page {page} of {totalPages}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Rows per page:</span>
+            <Select
+              value={pageSize.toString()}
+              onValueChange={(value) => onPageSizeChange(Number(value))}
+            >
+              <SelectTrigger className="w-20 h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <div className="flex gap-2">
           <Button

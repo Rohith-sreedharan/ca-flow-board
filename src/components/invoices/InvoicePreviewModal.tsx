@@ -600,9 +600,13 @@ export const InvoicePreviewModal = ({
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-2xl max-h-[80vh] flex items-center justify-center p-6">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Loading Invoice</DialogTitle>
+            <DialogDescription>Fetching invoice details</DialogDescription>
+          </DialogHeader>
           <div className="text-center">
             <div className="mb-2 text-lg font-medium">Loading invoice...</div>
-            <div className="text-sm text-muted-foreground">Fetching invoice details — this may take a moment.</div>
+            <div className="text-sm text-muted-foreground">Fetching invoice details — this may take a moment.</div>
           </div>
         </DialogContent>
       </Dialog>

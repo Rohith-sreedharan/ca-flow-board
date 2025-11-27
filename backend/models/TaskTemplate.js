@@ -44,6 +44,11 @@ const taskTemplateSchema = new mongoose.Schema({
     required: [true, 'Template category is required'],
     enum: ['gst', 'itr', 'roc', 'other']
   },
+  sub_category: {
+    type: String,
+    trim: true,
+    maxlength: [200, 'Sub-category cannot exceed 200 characters']
+  },
   // Recurring settings
   is_recurring: {
     type: Boolean,
@@ -148,6 +153,7 @@ const taskTemplateSchema = new mongoose.Schema({
 
 // Indexes for better performance
 taskTemplateSchema.index({ category: 1 });
+taskTemplateSchema.index({ sub_category: 1 });
 taskTemplateSchema.index({ firm: 1 });
 taskTemplateSchema.index({ created_by: 1 });
 taskTemplateSchema.index({ is_active: 1 });

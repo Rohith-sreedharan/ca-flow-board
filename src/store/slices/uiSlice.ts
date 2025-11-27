@@ -12,7 +12,8 @@ interface UIState {
   activeFilters: {
     status?: string[];
     priority?: string[];
-    category?: string[];
+    category?: string;
+    sub_category?: string;
     assignedTo?: string[];
     dueDate?: string;
   };

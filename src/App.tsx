@@ -99,6 +99,9 @@ const App = () => (
                 <Route path="employees" element={<AdminEmployees />} />
                 <Route path="invoices" element={<AdminInvoices />} />
                 <Route path="analytics" element={<AdminAnalytics />} />
+                <Route path="reports/gst/monthly" element={<GSTReportMonthly />} />
+                <Route path="reports/gst/quarterly" element={<GSTReportQuarterly />} />
+                <Route path="reports/gst/annual" element={<GSTReportAnnual />} />
               </Route>
               
               {/* Employee routes */}

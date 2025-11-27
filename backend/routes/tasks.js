@@ -62,7 +62,7 @@ const upload = multer({
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
-    const { status, priority, assignedTo, client, page = 1, limit = 20, includeArchived = false, search } = req.query;
+    const { status, priority, assignedTo, client, category, sub_category, page = 1, limit = 20, includeArchived = false, search } = req.query;
     
     // Build filter
     const filter = { firm: req.user.firmId._id };
@@ -76,13 +76,16 @@ router.get('/', auth, async (req, res) => {
     if (priority) filter.priority = priority;
     if (assignedTo) filter.assignedTo = assignedTo;
     if (client) filter.client = client;
+    if (category && category !== 'all') filter.category = category;
+    if (sub_category && sub_category !== 'all') filter.sub_category = sub_category;
 
     // Add search functionality
     if (search) {
       filter.$or = [
         { title: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
-        { category: { $regex: search, $options: 'i' } }
+        { category: { $regex: search, $options: 'i' } },
+        { sub_category: { $regex: search, $options: 'i' } }
       ];
     }
 
@@ -140,6 +143,7 @@ router.post('/', auth, [
       title,
       description,
       category,
+      sub_category,
       priority,
       client_id,
       assigned_to,
@@ -166,6 +170,8 @@ router.post('/', auth, [
       title,
       description: description || '',
       type: typeMapping[category] || 'other',
+      category: category || null,
+      sub_category: sub_category || null,
       priority,
       status: 'todo', // Changed from 'pending' to 'todo'
       dueDate: due_date ? new Date(due_date) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default to 1 week from now
@@ -213,6 +219,20 @@ router.post('/', auth, [
       // Only set template if it's a valid ObjectId format (24 hex characters)
       if (/^[0-9a-fA-F]{24}$/.test(template_id)) {
         taskData.template = template_id;
+        
+        // Fetch template to get category and sub_category
+        try {
+          const TaskTemplate = (await import('../models/TaskTemplate.js')).default;
+          const template = await TaskTemplate.findById(template_id);
+          if (template) {
+            // Override category from template
+            taskData.category = template.category;
+            // Use sub_category from template, fallback to template title
+            taskData.sub_category = template.sub_category || template.title;
+          }
+        } catch (err) {
+          console.error('Error fetching template for category/sub_category:', err);
+        }
       }
       // If template_id is not a valid ObjectId, we'll skip it (it might be a frontend-only template)
     }
@@ -928,6 +948,8 @@ router.post('/generate-recurring', auth, async (req, res) => {
           type: template.category === 'gst' ? 'gst_filing' :
                 template.category === 'itr' ? 'income_tax_return' :
                 template.category === 'roc' ? 'compliance' : 'other',
+          category: template.category,
+          sub_category: template.sub_category || template.title,
           priority: 'medium',
           status: 'todo',
           dueDate: dueDate,
@@ -1456,6 +1478,60 @@ router.get('/:id/documents/:documentId/download', auth, async (req, res) => {
     res.download(filePath, document.name);
   } catch (error) {
     console.error('Download task document error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Get sub-categories for a category
+// @route   GET /api/tasks/sub-categories/:category
+// @access  Private
+router.get('/sub-categories/:category', auth, async (req, res) => {
+  try {
+    const { category } = req.params;
+    
+    // Get distinct sub-categories for the given category from tasks
+    const subCategories = await Task.distinct('sub_category', {
+      firm: req.user.firmId._id,
+      category: category,
+      sub_category: { $ne: null, $exists: true }
+    });
+
+    // Also get sub-categories from templates
+    const templateSubCategories = await TaskTemplate.distinct('sub_category', {
+      firm: req.user.firmId._id,
+      category: category,
+      sub_category: { $ne: null, $exists: true },
+      is_deleted: false,
+      is_active: true
+    });
+
+    // Also get template titles as potential sub-categories
+    const templateTitles = await TaskTemplate.find({
+      firm: req.user.firmId._id,
+      category: category,
+      is_deleted: false,
+      is_active: true
+    }).select('title').lean();
+
+    // Combine and deduplicate
+    const allSubCategories = [
+      ...new Set([
+        ...subCategories,
+        ...templateSubCategories,
+        ...templateTitles.map(t => t.title)
+      ])
+    ].filter(Boolean).sort();
+
+    res.json({
+      success: true,
+      data: allSubCategories
+    });
+  } catch (error) {
+    console.error('Get sub-categories error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',

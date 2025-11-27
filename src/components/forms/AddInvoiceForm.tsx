@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -8,8 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { X, Plus } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { X, Plus, Info } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLastPricingByClient } from '@/hooks/useInvoices';
 
 const invoiceItemSchema = z.object({
   description: z.string().min(1, "Description is required"),
@@ -39,10 +41,31 @@ export function AddInvoiceForm({ onSuccess }: { onSuccess: () => void }) {
     },
   });
   
+  const selectedClientId = form.watch('clientId');
+  
+  // Fetch last pricing for selected client
+  const { data: lastPricing, isLoading: isLoadingPricing } = useLastPricingByClient(
+    selectedClientId || '',
+    { enabled: !!selectedClientId }
+  );
+  
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "items",
   });
+  
+  // Auto-populate items when last pricing is available
+  useEffect(() => {
+    if (lastPricing?.items && lastPricing.items.length > 0) {
+      const itemsFromLastInvoice = lastPricing.items.map(item => ({
+        description: item.description || '',
+        quantity: item.quantity || 1,
+        rate: item.rate || 0,
+      }));
+      form.setValue('items', itemsFromLastInvoice);
+      toast.info(`Loaded ${lastPricing.items.length} items from last invoice: ${lastPricing.invoiceNumber}`);
+    }
+  }, [lastPricing, form]);
   
   // Calculate subtotal
   const items = form.watch('items');
@@ -101,6 +124,24 @@ export function AddInvoiceForm({ onSuccess }: { onSuccess: () => void }) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {/* Last Invoice Pricing Info */}
+        {selectedClientId && lastPricing && (
+          <Card className="p-4 bg-blue-50 border-blue-200">
+            <div className="flex items-start gap-3">
+              <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="font-semibold text-blue-900 text-sm">Last Invoice Found</h4>
+                <p className="text-xs text-blue-700 mt-1">
+                  Invoice #{lastPricing.invoiceNumber} dated {new Date(lastPricing.issueDate).toLocaleDateString()}
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  {lastPricing.items?.length || 0} items from previous invoice loaded automatically
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}

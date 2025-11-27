@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import Counter from './Counter.js';
 
 const taskSchema = new mongoose.Schema({
   title: {
@@ -30,6 +31,16 @@ const taskSchema = new mongoose.Schema({
       'documentation',
       'other'
     ]
+  },
+  category: {
+    type: String,
+    enum: ['gst', 'itr', 'roc', 'other'],
+    trim: true
+  },
+  sub_category: {
+    type: String,
+    trim: true,
+    maxlength: [200, 'Sub-category cannot exceed 200 characters']
   },
   priority: {
     type: String,
@@ -115,6 +126,23 @@ const taskSchema = new mongoose.Schema({
     },
     endDate: Date,
     maxOccurrences: Number
+  },
+  // New simplified recurrence fields for sub-category specific recurring
+  recurrence_interval: {
+    type: Number,
+    min: 1,
+    // Number of days between occurrences (e.g., 30 for monthly, 90 for quarterly)
+  },
+  recurrence_monthly_date: {
+    type: Number,
+    min: 1,
+    max: 31,
+    // Day of month for recurring tasks (e.g., 10 for GSTR-1, 20 for GSTR-3B)
+  },
+  recurrence_pattern: {
+    type: String,
+    enum: ['daily', 'weekly', 'monthly', 'yearly', 'custom'],
+    // Pattern for recurring tasks
   },
   parentTask: {
     type: mongoose.Schema.Types.ObjectId,
@@ -230,6 +258,8 @@ taskSchema.index({ collaborators: 1 });
 taskSchema.index({ client: 1 });
 taskSchema.index({ firm: 1 });
 taskSchema.index({ type: 1 });
+taskSchema.index({ category: 1 });
+taskSchema.index({ sub_category: 1 });
 taskSchema.index({ isRecurring: 1 });
 taskSchema.index({ billable: 1 });
 taskSchema.index({ invoiced: 1 });
@@ -251,10 +281,26 @@ taskSchema.virtual('totalCost').get(function() {
 // Generate task ID before saving
 taskSchema.pre('save', async function(next) {
   if (this.isNew && !this.taskId) {
-    const firm = await mongoose.model('Firm').findById(this.firm);
-    const prefix = firm?.settings?.taskPrefix || 'TSK';
-    const count = await this.constructor.countDocuments({ firm: this.firm });
-    this.taskId = `${prefix}${String(count + 1).padStart(4, '0')}`;
+    try {
+      const firm = await mongoose.model('Firm').findById(this.firm);
+      const prefix = firm?.settings?.taskPrefix || 'TSK';
+      const counterId = `task_${this.firm}`;
+      
+      console.log(`🔢 [PRE-SAVE] Generating taskId for firm ${this.firm}...`);
+      
+      // Use findOneAndUpdate with atomic increment to avoid race conditions
+      const counter = await Counter.findOneAndUpdate(
+        { _id: counterId },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+      );
+      
+      this.taskId = `${prefix}${String(counter.seq).padStart(4, '0')}`;
+      console.log(`✅ [PRE-SAVE] Generated taskId: ${this.taskId} (counter: ${counter.seq})`);
+    } catch (err) {
+      console.error(`❌ [PRE-SAVE] Error generating taskId:`, err);
+      return next(err);
+    }
   }
   next();
 });

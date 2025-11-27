@@ -512,15 +512,17 @@ export default function TaskOverview({ task, client, assignedEmployees = [], onC
                 Archive Task
               </Button>
 
-              <Button 
-                variant="destructive" 
-                className="flex items-center gap-2"
-                disabled={isArchiving || isDeleting}
-                onClick={() => setIsDeleteDialogOpen(true)}
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete Task
-              </Button>
+              {isOwner && (
+                <Button 
+                  variant="destructive" 
+                  className="flex items-center gap-2"
+                  disabled={isArchiving || isDeleting}
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Task
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

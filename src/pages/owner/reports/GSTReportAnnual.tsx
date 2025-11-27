@@ -31,7 +31,7 @@ const GSTReportAnnual = () => {
   const [modalOpen, setModalOpen] = useState(false);
   
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   
   const [sortBy, setSortBy] = useState('createdAt');
@@ -129,7 +129,7 @@ const GSTReportAnnual = () => {
 
   useEffect(() => {
     fetchReport();
-  }, [selectedYear, page, sortBy, sortOrder, filterGstStatus, filterClient, filterReturnType, filterReturnStatus]);
+  }, [selectedYear, page, pageSize, sortBy, sortOrder, filterGstStatus, filterClient, filterReturnType, filterReturnStatus]);
 
   const handleRowClick = (row: GSTReportRow) => {
     setSelectedRow(row);
@@ -249,6 +249,7 @@ const GSTReportAnnual = () => {
             pageSize={pageSize}
             totalPages={totalPages}
             onPageChange={setPage}
+            onPageSizeChange={setPageSize}
             sortBy={sortBy}
             sortOrder={sortOrder}
             onSort={handleSort}

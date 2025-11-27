@@ -289,8 +289,12 @@ const TaskBoard = ({ tasks, basePath }: TaskBoardProps) => {
       if (!activeFilters.priority.includes(task.priority)) return false;
     }
     
-    if (activeFilters.category && activeFilters.category.length > 0) {
-      if (!activeFilters.category.includes(task.category)) return false;
+    if (activeFilters.category && activeFilters.category !== 'all') {
+      if (task.category !== activeFilters.category) return false;
+    }
+    
+    if (activeFilters.sub_category && activeFilters.sub_category !== 'all') {
+      if ((task as any).sub_category !== activeFilters.sub_category) return false;
     }
     
     if (activeFilters.assignedTo && activeFilters.assignedTo.length > 0) {
@@ -344,6 +348,39 @@ const TaskBoard = ({ tasks, basePath }: TaskBoardProps) => {
 
   // Handle task drop between columns
   const handleTaskMove = (taskId: string, newStatus: TaskStatus) => {
+    // Find the task to check permissions
+    const task = tasks.find(t => t.id === taskId);
+    
+    if (!task) {
+      toast.error('Task not found');
+      return;
+    }
+    
+    // Check if user has permission to update this task
+    // Allow: task creator, assigned users, collaborators, owner/admin
+    const isTaskCreator = task.createdBy === user?.id || task.createdBy === user?._id;
+    const isAssignedToTask = task.assignedTo.some(assignee => {
+      if (typeof assignee === 'string') {
+        return assignee === user?.id || assignee === user?._id;
+      }
+      return (assignee as any)._id === user?._id || (assignee as any)._id === user?.id;
+    });
+    const isCollaborator = (task.collaborators || []).some(collab => {
+      if (typeof collab === 'string') {
+        return collab === user?.id || collab === user?._id;
+      }
+      return (collab as any)._id === user?._id || (collab as any)._id === user?.id;
+    });
+    
+    const hasPermission = isTaskCreator || isAssignedToTask || isCollaborator || isOwnerOrAdmin;
+    
+    if (!hasPermission) {
+      toast.error('You do not have permission to update this task', {
+        description: 'Only task creator, assigned members, or admins can change task status'
+      });
+      return;
+    }
+    
     updateTaskStatus({ taskId, status: newStatus });
   };
 
