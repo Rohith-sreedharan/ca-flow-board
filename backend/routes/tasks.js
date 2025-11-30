@@ -741,14 +741,22 @@ router.delete('/:id', auth, async (req, res) => {
       });
     }
 
-    // Only allow deletion if user is admin/owner or assigned by user
-    const canDelete = task.assignedBy?.toString() === req.user._id.toString() ||
-                     ['admin', 'owner', 'superadmin'].includes(req.user.role);
-
-    if (!canDelete) {
+    // Check if task belongs to user's firm
+    const taskFirmId = task.firm?._id || task.firm;
+    const userFirmId = req.user.firmId?._id || req.user.firmId;
+    
+    if (taskFirmId?.toString() !== userFirmId?.toString()) {
       return res.status(403).json({
         success: false,
-        message: 'Not authorized to delete this task'
+        message: 'Not authorized to delete this task - firm mismatch'
+      });
+    }
+
+    // Only allow deletion if user is admin/owner/superadmin
+    if (!['admin', 'owner', 'superadmin'].includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only administrators and owners can delete tasks'
       });
     }
 
@@ -1032,15 +1040,22 @@ router.post('/bulk-delete', auth, async (req, res) => {
       });
     }
 
-    // Delete tasks that belong to the user's firm and user has permission to delete
-    const result = await Task.deleteMany({
+    // Only allow bulk deletion if user is admin/owner/superadmin
+    if (!['admin', 'owner', 'superadmin'].includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only administrators and owners can delete tasks'
+      });
+    }
+
+    // Build delete filter for tasks in user's firm
+    const deleteFilter = {
       _id: { $in: taskIds },
-      firm: req.user.firmId._id,
-      $or: [
-        { assignedBy: req.user._id },
-        { assignedTo: req.user._id }
-      ]
-    });
+      firm: req.user.firmId._id
+    };
+
+    // Delete tasks that belong to the user's firm and user has permission to delete
+    const result = await Task.deleteMany(deleteFilter);
 
     res.json({
       success: true,
