@@ -67,6 +67,15 @@ router.get('/', auth, async (req, res) => {
     // Build filter
     const filter = { firm: req.user.firmId?._id || req.user.firmId };
     
+    // For employees, only show tasks assigned to them or where they are collaborators
+    if (req.user.role === 'employee') {
+      filter.$or = [
+        { assignedTo: req.user._id },
+        { collaborators: req.user._id },
+        { assignedBy: req.user._id }
+      ];
+    }
+    
     // Exclude archived tasks by default unless explicitly requested
     if (includeArchived !== 'true') {
       filter.isArchived = { $ne: true };

@@ -37,6 +37,7 @@ const statusOptions = [
   { value: 'partially_paid', label: 'Partially Paid' },
   { value: 'overdue', label: 'Overdue' },
   { value: 'cancelled', label: 'Cancelled' },
+  { value: 'amount_not_filled', label: 'Amount Not Filled' },
 ];
 
 const sortOptions = [

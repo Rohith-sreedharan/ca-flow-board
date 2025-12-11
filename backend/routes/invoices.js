@@ -32,7 +32,16 @@ router.get('/', auth, async (req, res) => {
 
     // Add status filter
     if (status && status !== 'all') {
-      query.status = status;
+      if (status === 'amount_not_filled') {
+        // Filter invoices where totalAmount is 0 or not set
+        query.$or = [
+          { totalAmount: 0 },
+          { totalAmount: { $exists: false } },
+          { totalAmount: null }
+        ];
+      } else {
+        query.status = status;
+      }
     }
 
     // Build sort object

@@ -46,7 +46,7 @@ import { useTasks } from '@/hooks/useTasks';
 import { useTaskWebSocket } from '@/hooks/useTaskWebSocket';
 import { useEmployees } from '@/hooks/useEmployees';
 import { useAuth } from '@/hooks/useAuth';
-import { AddTaskForm } from '@/components/forms/AddTaskForm';
+import { SimplifiedAddTaskForm } from '@/components/forms/SimplifiedAddTaskForm';
 import TaskDetailModal from './TaskDetailModal';
 import { toast } from 'sonner';
 import Swal from 'sweetalert2';
@@ -102,13 +102,14 @@ const TaskBoard = ({ tasks, basePath }: TaskBoardProps) => {
 
   // Export functions
   const exportToCSV = () => {
-    const headers = ['Title', 'Description', 'Status', 'Priority', 'Category', 'Assigned To', 'Due Date', 'Created Date'];
+    const headers = ['Title', 'Description', 'Status', 'Priority', 'Category', 'Client Name', 'Assigned To', 'Due Date', 'Created Date'];
     const csvData = filteredTasks.map(task => [
       task.title,
       task.description,
       task.status,
       task.priority,
       task.category,
+      task.clientName || 'No Client',
       Array.isArray(task.assignedTo) ? task.assignedTo.map(user => {
         if (typeof user === 'string') return user;
         return (user as any).fullName || (user as any).email || 'Unknown';
@@ -492,7 +493,7 @@ const TaskBoard = ({ tasks, basePath }: TaskBoardProps) => {
                 <DialogHeader>
                   <DialogTitle>Create New Task</DialogTitle>
                 </DialogHeader>
-                <AddTaskForm onSuccess={() => setShowCreateTask(false)} />
+                <SimplifiedAddTaskForm onSuccess={() => setShowCreateTask(false)} />
               </DialogContent>
             </Dialog>
           )}
